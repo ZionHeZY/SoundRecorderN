@@ -1,5 +1,3 @@
-
-
 package com.android.soundrecorder;
 
 import android.app.KeyguardManager;
@@ -51,15 +49,15 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
 
     public final static String ACTION_PARAM_FORMAT = "format";
 
-    public final static String ACTION_PARAM_CHANNELS="channels";
+    public final static String ACTION_PARAM_CHANNELS = "channels";
 
-    public final static String ACTION_PARAM_SAMPLINGRATE="samplingrate";
+    public final static String ACTION_PARAM_SAMPLINGRATE = "samplingrate";
 
-    public final static String ACTION_PARAM_BITRATE="bitrate";
+    public final static String ACTION_PARAM_BITRATE = "bitrate";
 
     public final static String ACTION_PARAM_PATH = "path";
 
-    public final static String ACTION_PARAM_MAXDURATION="maxduration";
+    public final static String ACTION_PARAM_MAXDURATION = "maxduration";
 
     public final static String ACTION_PARAM_AUDIOSOURCETYPE = "audiosourcetype";
 
@@ -99,7 +97,7 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
         @Override
         public void onCallStateChanged(int state, String incomingNumber) {
             if (state != TelephonyManager.CALL_STATE_IDLE) {
-                Log.d("______________","CALL_STATE_IDLE");
+                Log.d("______________", "CALL_STATE_IDLE");
                 localStopRecording();
             }
         }
@@ -127,7 +125,7 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d("_____++++++______","ServiceonCreate");
+        Log.d("_____++++++______", "ServiceonCreate");
         //mRecorder = null;
         mLowStorageNotification = null;
         mRemainingTimeCalculator = new RemainingTimeCalculator(this);
@@ -136,7 +134,7 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
         mTeleManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         mTeleManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
 
-        PowerManager pm = (PowerManager)getSystemService(Context.POWER_SERVICE);
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, this.getClass().getName());
         mWakeLock.setReferenceCounted(false);
 
@@ -144,6 +142,7 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
 
         registerScreenOnOffListener();
     }
+
     public void registerScreenOnOffListener() {
         if (mScreenOnOffReceiver == null) {
             mScreenOnOffReceiver = new BroadcastReceiver() {
@@ -152,21 +151,17 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
                     String action = intent.getAction();
                     if (action.equals(Intent.ACTION_SCREEN_ON)) {
                         Log.d("+++++++++++", "ACTION_SCREEN_ON Intent received");
-                        if (null != mWakeLock)
-                        {
+                        if (null != mWakeLock) {
                             mWakeLock.release();
                         }
-                    }
-                    else if (action.equals(Intent.ACTION_SCREEN_OFF)) {
+                    } else if (action.equals(Intent.ACTION_SCREEN_OFF)) {
                         Log.d("+++++++++++", "ACTION_SCREEN_OFF Intent received");
-                        Log.d("___________", "mWakeLock "+mWakeLock);
-                        if (null == mWakeLock)
-                        {
-                            Log.d("+++++++++++", "mWakeLock "+mWakeLock);
-                            PowerManager pm = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
-                            mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK|PowerManager.ON_AFTER_RELEASE, TAG);
-                            if (null != mWakeLock)
-                            {
+                        Log.d("___________", "mWakeLock " + mWakeLock);
+                        if (null == mWakeLock) {
+                            Log.d("+++++++++++", "mWakeLock " + mWakeLock);
+                            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+                            mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE, TAG);
+                            if (null != mWakeLock) {
                                 mWakeLock.acquire();
                             }
                         }
@@ -183,12 +178,12 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if(intent!=null){
+        if (intent != null) {
             Bundle bundle = intent.getExtras();
             if (bundle != null && bundle.containsKey(ACTION_NAME)) {
                 switch (bundle.getInt(ACTION_NAME, ACTION_INVALID)) {
                     case ACTION_START_RECORDING:
-                        Log.d("_____++++++______","ACTION_START_RECORDING");
+                        Log.d("_____++++++______", "ACTION_START_RECORDING");
                         localStartRecording(mContext,
                                 bundle.getInt(ACTION_PARAM_FORMAT),
                                 bundle.getInt(ACTION_PARAM_CHANNELS),
@@ -233,12 +228,12 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
 
     @Override
     public void onDestroy() {
-        Log.d("_____++++++______","ServiceonDestroy");
+        Log.d("_____++++++______", "ServiceonDestroy");
         mTeleManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_NONE);
         if (mWakeLock.isHeld()) {
             mWakeLock.release();
         }
-        if(isRecording()){
+        if (isRecording()) {
             sendErrorBroadcast(Recorder.RECORD_INTERRUPTED);
         }
         mWakeLock.release();
@@ -304,13 +299,13 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
             }
 
             mRecorder.setOutputFile(path);
-            Log.d("+++++++++++++++++++","path+"+path);
+            Log.d("+++++++++++++++++++", "path+" + path);
             // Handle IOException
             try {
                 mRecorder.prepare();
             } catch (IOException exception) {
                 sendErrorBroadcast(Recorder.INTERNAL_ERROR);
-                Log.d("+++++++++++++++++++","INTERNAL_ERROR");
+                Log.d("+++++++++++++++++++", "INTERNAL_ERROR");
                 mRecorder.reset();
                 mRecorder.release();
             /*if (mSampleFile != null) mSampleFile.delete();
@@ -321,7 +316,7 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
             }
             // Handle RuntimeException if the recording couldn't start
             try {
-                Log.d("_____++++++______","mRecorder.start");
+                Log.d("_____++++++______", "mRecorder.start");
                 mRecorder.start();
             } catch (RuntimeException exception) {
                 AudioManager audioMngr = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
@@ -379,14 +374,14 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
     }
 
     private void localResumeRecording() {
-        Log.d("_____++++++______","localResumeRecording");
+        Log.d("_____++++++______", "localResumeRecording");
         if (mRecorder == null) {
             return;
         }
         try {
-            if(Build.VERSION.SDK_INT >= 23){
+            if (Build.VERSION.SDK_INT >= 23) {
                 mRecorder.resume();
-            }else{
+            } else {
                 mRecorder.start();
             }
         } catch (RuntimeException exception) {
@@ -403,11 +398,11 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
         PendingIntent pendingIntent;
         pendingIntent = PendingIntent
                 .getActivity(this, 0, new Intent(this, SoundRecorder.class), 0);
-        Notification.Builder builder=new Notification.Builder(this).setContentTitle(getString(R.string.notification_recording))
+        Notification.Builder builder = new Notification.Builder(this).setContentTitle(getString(R.string.notification_recording))
                 .setSmallIcon(R.drawable.stat_sys_call_record).setContentIntent(pendingIntent).setContentText(getString(R.string.app_name));
         Notification notification = builder.getNotification();
         notification.flags |= Notification.FLAG_ONGOING_EVENT;
-        manager.notify(NOTIFICATION_ID,notification);
+        manager.notify(NOTIFICATION_ID, notification);
 
         /*Notification notification = new Notification(R.drawable.stat_sys_call_record,
                 getString(R.string.notification_recording), System.currentTimeMillis());
@@ -433,7 +428,7 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
                 .getActivity(this, 0, new Intent(this, SoundRecorder.class), 0);
 
         if (mLowStorageNotification == null) {
-            Notification.Builder builder=new Notification.Builder(this).setContentTitle(getString(R.string.notification_recording))
+            Notification.Builder builder = new Notification.Builder(this).setContentTitle(getString(R.string.notification_recording))
                     .setSmallIcon(R.drawable.stat_sys_call_record_full).setContentIntent(pendingIntent);
             Notification mLowStorageNotification = builder.getNotification();
             mLowStorageNotification.flags |= Notification.FLAG_ONGOING_EVENT;
@@ -443,10 +438,10 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
             mLowStorageNotification.flags = Notification.FLAG_ONGOING_EVENT;*/
         }
 
-        Notification.Builder builder=new Notification.Builder(this).setContentTitle(getString(R.string.notification_warning,minutes))
+        Notification.Builder builder = new Notification.Builder(this).setContentTitle(getString(R.string.notification_warning, minutes))
                 .setSmallIcon(R.drawable.stat_sys_call_record_full).setContentIntent(pendingIntent).setContentText(getString(R.string.app_name));
         mLowStorageNotification = builder.getNotification();
-        manager.notify(NOTIFICATION_ID,mLowStorageNotification);
+        manager.notify(NOTIFICATION_ID, mLowStorageNotification);
 
         /*mLowStorageNotification.setLatestEventInfo(this, getString(R.string.app_name),
                 getString(R.string.notification_warning, minutes), pendingIntent);
@@ -464,7 +459,7 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            Uri contentUri = FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".fileProvider",new File(mFilePath));
+            Uri contentUri = FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".fileProvider", new File(mFilePath));
             intent.setDataAndType(contentUri, "application/vnd.android.package-archive");
         } else {
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -476,11 +471,11 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
         pendingIntent = PendingIntent.getActivity(this, 0, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Notification.Builder builder=new Notification.Builder(this).setContentTitle(getString(R.string.notification_stopped))
+        Notification.Builder builder = new Notification.Builder(this).setContentTitle(getString(R.string.notification_stopped))
                 .setSmallIcon(R.drawable.stat_sys_call_record).setContentIntent(pendingIntent).setContentText(getString(R.string.app_name));
         Notification notification = builder.getNotification();
         notification.flags |= Notification.FLAG_AUTO_CANCEL;
-        manager.notify(NOTIFICATION_ID,notification);
+        manager.notify(NOTIFICATION_ID, notification);
 
         /*notification.setLatestEventInfo(this, getString(R.string.app_name),
                 getString(R.string.notification_stopped), pendingIntent);
@@ -536,7 +531,7 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
                                       int maxDuration,
                                       int audiosourcetype,
                                       int codectype) {
-        mContext=context;
+        mContext = context;
         Intent intent = new Intent(context, SoundRecorderService.class);
         intent.putExtra(ACTION_NAME, ACTION_START_RECORDING);
         intent.putExtra(ACTION_PARAM_FORMAT, outputfileformat);
@@ -547,7 +542,7 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
         intent.putExtra(ACTION_PARAM_PATH, path);
         intent.putExtra(ACTION_PARAM_AUDIOSOURCETYPE, audiosourcetype);
         intent.putExtra(ACTION_PARAM_CODECTYPE, codectype);
-        Log.d("+++++++++++++++++++","startService");
+        Log.d("+++++++++++++++++++", "startService");
         context.startService(intent);
     }
 
@@ -558,19 +553,19 @@ public class SoundRecorderService extends Service implements MediaRecorder.OnErr
     }
 
     public static void pauseRecording(Context context) {
-        Intent intent = new Intent(context,SoundRecorderService.class);
+        Intent intent = new Intent(context, SoundRecorderService.class);
         intent.putExtra(ACTION_NAME, ACTION_PAUSE_RECORDING);
         context.startService(intent);
     }
 
     public static void resumeRecording(Context context) {
-        Intent intent = new Intent(context,SoundRecorderService.class);
+        Intent intent = new Intent(context, SoundRecorderService.class);
         intent.putExtra(ACTION_NAME, ACTION_RESUME_RECORDING);
         context.startService(intent);
     }
 
     public static int getMaxAmplitude() {
-        Log.d("+++++++++++++++++++","getMaxAmplitude"+mRecorder);
+        Log.d("+++++++++++++++++++", "getMaxAmplitude" + mRecorder);
         return mRecorder == null ? 0 : mRecorder.getMaxAmplitude();
     }
 

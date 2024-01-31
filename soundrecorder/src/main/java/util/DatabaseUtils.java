@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2016, The Linux Foundation. All rights reserved.
- * Not a Contribution.
- *
- * Copyright (C) 2011 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-
 package util;
 
 import android.app.AlertDialog;
@@ -29,6 +10,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.util.Log;
+
 import com.android.soundrecorder.R;
 
 import java.io.File;
@@ -44,7 +26,7 @@ public class DatabaseUtils {
      * A simple utility to do a query into the databases.
      */
     public static Cursor query(ContentResolver resolver, Uri uri, String[] projection,
-            String selection, String[] selectionArgs, String sortOrder) {
+                               String selection, String[] selectionArgs, String sortOrder) {
         try {
             if (resolver == null) {
                 return null;
@@ -61,8 +43,8 @@ public class DatabaseUtils {
      * maintain the play_order in the playlist.
      */
     public static void addToPlaylist(ContentResolver resolver, int audioId, long playlistId) {
-        String[] cols = new String[] {
-            "count(*)"
+        String[] cols = new String[]{
+                "count(*)"
         };
         Uri uri = MediaStore.Audio.Playlists.Members.getContentUri(VOLUME_NAME, playlistId);
         Cursor cur = query(resolver, uri, cols, null, null, null);
@@ -82,12 +64,12 @@ public class DatabaseUtils {
      */
     public static int getPlaylistId(ContentResolver resolver) {
         Uri uri = MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI;
-        final String[] ids = new String[] {
-            MediaStore.Audio.Playlists._ID
+        final String[] ids = new String[]{
+                MediaStore.Audio.Playlists._ID
         };
         final String where = MediaStore.Audio.Playlists.NAME + "=?";
-        final String[] args = new String[] {
-            PLAY_LIST_NAME
+        final String[] args = new String[]{
+                PLAY_LIST_NAME
         };
         Cursor cursor = query(resolver, uri, ids, where, args, null);
         if (cursor == null) {
@@ -122,11 +104,11 @@ public class DatabaseUtils {
 
     public static boolean isDataExist(ContentResolver resolver, File file) {
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        final String[] ids = new String[] {
+        final String[] ids = new String[]{
                 MediaStore.Audio.Playlists._ID
         };
         final String where = MediaStore.Audio.Playlists.DATA + "=?";
-        final String[] args = new String[] {
+        final String[] args = new String[]{
                 file.getAbsolutePath()
         };
         Cursor cursor = query(resolver, uri, ids, where, args, null);
@@ -240,7 +222,7 @@ public class DatabaseUtils {
     }
 
     public static Cursor getFolderCursor(ContentResolver resolver, long folderId) {
-        return getFolderCursor(resolver, new Long[] {folderId});
+        return getFolderCursor(resolver, new Long[]{folderId});
     }
 
     public static Cursor getFolderCursor(ContentResolver resolver, Long[] folderIds) {

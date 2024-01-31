@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2011 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.android.soundrecorder;
 
 import android.app.Activity;
@@ -72,15 +56,6 @@ import util.PermissionUtils;
 import util.StorageUtils;
 import util.Utils;
 
-
-/**
- * Calculates remaining recording time based on available disk space and
- * optionally a maximum recording file size.
- *
- * The reason why this is not trivial is that the file grows in blocks
- * every few seconds or so, while we want a smooth countdown.
- */
-
 class RemainingTimeCalculator {
     public static final int UNKNOWN_LIMIT = 0;
     public static final int FILE_SIZE_LIMIT = 1;
@@ -89,7 +64,7 @@ class RemainingTimeCalculator {
     // which of the two limits we will hit (or have fit) first
     private int mCurrentLowerLimit = UNKNOWN_LIMIT;
 
-     // State for tracking file size of recording.
+    // State for tracking file size of recording.
     private File mRecordingFile;
     private long mMaxBytes;
 
@@ -117,7 +92,7 @@ class RemainingTimeCalculator {
      * how long until we run out of disk space and how long until the file
      * reaches the specified size.
      *
-     * @param file the file to watch
+     * @param file     the file to watch
      * @param maxBytes the limit
      */
 
@@ -160,7 +135,7 @@ class RemainingTimeCalculator {
         }
         long result = mLastBlockSize / mBytesPerSecond;
         // so now we have this much time
-        result -= (now - mBlocksChangedTime)/1000;
+        result -= (now - mBlocksChangedTime) / 1000;
 
         if (mRecordingFile == null) {
             mCurrentLowerLimit = DISK_SPACE_LIMIT;
@@ -177,12 +152,12 @@ class RemainingTimeCalculator {
             mLastFileSize = fileSize;
         }
 
-        long result2 = (mMaxBytes - fileSize)/mBytesPerSecond;
-        result2 -= (now - mFileSizeChangedTime)/1000;
+        long result2 = (mMaxBytes - fileSize) / mBytesPerSecond;
+        result2 -= (now - mFileSizeChangedTime) / 1000;
         result2 -= 1; // just for safety
 
         mCurrentLowerLimit = result < result2
-            ? DISK_SPACE_LIMIT : FILE_SIZE_LIMIT;
+                ? DISK_SPACE_LIMIT : FILE_SIZE_LIMIT;
 
         return Math.min(result, result2);
     }
@@ -202,7 +177,7 @@ class RemainingTimeCalculator {
      * @param bitRate the bit rate to set in bits/sec.
      */
     public void setBitRate(int bitRate) {
-        mBytesPerSecond = bitRate/8;
+        mBytesPerSecond = bitRate / 8;
     }
 
     public void setStoragePath(int path) {
@@ -211,7 +186,7 @@ class RemainingTimeCalculator {
 }
 
 public class SoundRecorder extends Activity
-        implements Button.OnClickListener, Recorder.OnStateChangedListener,Runnable{
+        implements Button.OnClickListener, Recorder.OnStateChangedListener, Runnable {
     static final String TAG = "SoundRecorder";
     static final String STATE_FILE_NAME = "soundrecorder.state";
     static final String RECORDER_STATE_KEY = "recorder_state";
@@ -271,8 +246,8 @@ public class SoundRecorder extends Activity
     boolean mSampleInterrupted = false;
     static boolean bSSRSupported;
     String mErrorUiMessage = null; // Some error messages are displayed in the UI,
-                                   // not a dialog. This happens when a recording
-                                   // is interrupted for some reason.
+    // not a dialog. This happens when a recording
+    // is interrupted for some reason.
 
     long mMaxFileSize = -1;        // can be specified in the intent
     RemainingTimeCalculator mRemainingTimeCalculator = null;
@@ -376,22 +351,22 @@ public class SoundRecorder extends Activity
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (action.equals("com.android.deskclock.ALARM_ALERT")) {
-                Log.d("_____++++++______","mAlarmAndPhoneReceiver");
-                if(mRecorder.state()==Recorder.RECORDING_STATE||mRecorder.state() == Recorder.PAUSE_STATE){
+                Log.d("_____++++++______", "mAlarmAndPhoneReceiver");
+                if (mRecorder.state() == Recorder.RECORDING_STATE || mRecorder.state() == Recorder.PAUSE_STATE) {
                     mRecorder.stop();
                     saveSample(true);
                     //mVUMeter.resetAngle();
                     invalidateOptionsMenu();
-                }else if(mRecorder.state() == Recorder.PLAYING_STATE){
+                } else if (mRecorder.state() == Recorder.PLAYING_STATE) {
                     mRecorder.stop();
                 }
                 mRecorder.clear();
             }
-            if(intent.getAction().equals(Intent.ACTION_NEW_OUTGOING_CALL)){
+            if (intent.getAction().equals(Intent.ACTION_NEW_OUTGOING_CALL)) {
                 String phoneNumber = intent
                         .getStringExtra(Intent.EXTRA_PHONE_NUMBER);
                 Log.d(TAG, "call OUT:" + phoneNumber);
-            }else{
+            } else {
                 mTelephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
                 mTelephonyManager.listen(listener, PhoneStateListener.LISTEN_CALL_STATE);
                 //设置一个监听器
@@ -399,7 +374,7 @@ public class SoundRecorder extends Activity
 
         }
 
-        PhoneStateListener listener=new PhoneStateListener(){
+        PhoneStateListener listener = new PhoneStateListener() {
 
             @Override
             public void onCallStateChanged(int state, String incomingNumber) {
@@ -407,7 +382,7 @@ public class SoundRecorder extends Activity
                 switch (state) {
                     case TelephonyManager.CALL_STATE_IDLE:
                         if ((mCallState == TelephonyManager.CALL_STATE_OFFHOOK)
-                                && !(mAudioSourceType == MediaRecorder.AudioSource.MIC)){
+                                && !(mAudioSourceType == MediaRecorder.AudioSource.MIC)) {
                             mRecorder.stop();
                             saveSample(true);
                             //mVUMeter.resetAngle();
@@ -417,8 +392,8 @@ public class SoundRecorder extends Activity
                         }
 
                     case TelephonyManager.CALL_STATE_RINGING:
-                        if(mAudioSourceType == MediaRecorder.AudioSource.MIC){
-                            if(mRecorder.state() == Recorder.RECORDING_STATE||mRecorder.state() == Recorder.PAUSE_STATE){
+                        if (mAudioSourceType == MediaRecorder.AudioSource.MIC) {
+                            if (mRecorder.state() == Recorder.RECORDING_STATE || mRecorder.state() == Recorder.PAUSE_STATE) {
                                 mRecorder.stop();
                                 saveSample(true);
                                 invalidateOptionsMenu();
@@ -429,7 +404,7 @@ public class SoundRecorder extends Activity
 
                         if (mCallStateMap.containsValue(TelephonyManager.CALL_STATE_OFFHOOK)) {
                             mCallState = TelephonyManager.CALL_STATE_OFFHOOK;
-                        } else if(mCallStateMap.containsValue(TelephonyManager.CALL_STATE_RINGING)) {
+                        } else if (mCallStateMap.containsValue(TelephonyManager.CALL_STATE_RINGING)) {
                             mCallState = TelephonyManager.CALL_STATE_RINGING;
                         } else {
                             mCallState = TelephonyManager.CALL_STATE_IDLE;
@@ -439,7 +414,7 @@ public class SoundRecorder extends Activity
 
                     default:
                         // The control should not come here
-                        Log.e(TAG,"Unknown call state");
+                        Log.e(TAG, "Unknown call state");
                         break;
                 }
             }
@@ -451,7 +426,7 @@ public class SoundRecorder extends Activity
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
-            if(mRecorder==null) return;
+            if (mRecorder == null) return;
             double ratio = (double) mRecorder.getMaxAmplitude() / 100;
             double db = 0;// 分贝
             //默认的最大音量是100,可以修改，但其实默认的，在测试过程中就有不错的表现
@@ -468,7 +443,7 @@ public class SoundRecorder extends Activity
     @Override
     public void onCreate(Bundle icycle) {
         super.onCreate(icycle);
-        Log.d("_____++++++______","onCreate");
+        Log.d("_____++++++______", "onCreate");
         if (getResources().getBoolean(R.bool.config_storage_path)) {
             mStoragePath = StorageUtils.applyCustomStoragePath(this);
         }
@@ -492,7 +467,7 @@ public class SoundRecorder extends Activity
             }
 
             final String EXTRA_MAX_BYTES
-                = MediaStore.Audio.Media.EXTRA_MAX_BYTES;
+                    = MediaStore.Audio.Media.EXTRA_MAX_BYTES;
             mMaxFileSize = i.getLongExtra(EXTRA_MAX_BYTES, -1);
 
             mIsGetContentAction = Intent.ACTION_GET_CONTENT.equals(i.getAction());
@@ -520,7 +495,7 @@ public class SoundRecorder extends Activity
         }
         //makeActionOverflowMenuShown();
         setContentView(R.layout.main);
-        mAudioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
+        mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         mRecorder = new Recorder(this);
         mRecorder.setOnStateChangedListener(this);
         mRecorder.setMaxDuration(maxDuration);
@@ -528,9 +503,9 @@ public class SoundRecorder extends Activity
         mRemainingTimeCalculator = new RemainingTimeCalculator(this);
 
         PowerManager pm
-            = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                = (PowerManager) getSystemService(Context.POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK,
-                                    "SoundRecorder");
+                "SoundRecorder");
 
         initResourceRefs();
         mRecorderStop = false;
@@ -570,12 +545,12 @@ public class SoundRecorder extends Activity
             //mPhoneStateListener[j] = getPhoneStateListener(subId[0]);
         }*/
 
-        String ssrRet = SystemProperties.get("ro.qc.sdk.audio.ssr","false");
+        String ssrRet = SystemProperties.get("ro.qc.sdk.audio.ssr", "false");
         if (ssrRet.contains("true")) {
-            Log.d(TAG,"Surround sound recording is supported");
+            Log.d(TAG, "Surround sound recording is supported");
             bSSRSupported = true;
         } else {
-            Log.d(TAG,"Surround sound recording is not supported");
+            Log.d(TAG, "Surround sound recording is not supported");
             bSSRSupported = false;
         }
 
@@ -595,7 +570,7 @@ public class SoundRecorder extends Activity
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d("_____++++++______","onResume");
+        Log.d("_____++++++______", "onResume");
         // While we're in the foreground, listen for phone state changes.
         /*mTelephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         for(int i = 0; i < mPhoneCount; i++) {
@@ -664,7 +639,7 @@ public class SoundRecorder extends Activity
             @Override
             public void onClick(View v) {
                 startListActivity();
-                Log.d("_____++++++______","startListActivity");
+                Log.d("_____++++++______", "startListActivity");
             }
         });
 
@@ -675,16 +650,16 @@ public class SoundRecorder extends Activity
 
     private String[] getOperationPermissionName(int operation) {
         switch (operation) {
-        case R.id.recordButton:
-            return PermissionUtils.getOperationPermissions(PermissionUtils.PermissionType.RECORD);
-        default:
-            return null;
+            case R.id.recordButton:
+                return PermissionUtils.getOperationPermissions(PermissionUtils.PermissionType.RECORD);
+            default:
+                return null;
         }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                int[] grantResults) {
+                                           int[] grantResults) {
         if (PermissionUtils.checkPermissionResult(permissions, grantResults)) {
             processClickEvent(requestCode);
         }
@@ -707,50 +682,50 @@ public class SoundRecorder extends Activity
 
     private void processClickEvent(int viewId) {
         switch (viewId) {
-        case R.id.recordButton:
-            Log.d("_____++++++______","recordButton");
-            Thread thread = new Thread(this);
-            thread.start();
-            if (mRecorder.state() == Recorder.PAUSE_STATE) {
-                mRecorder.resumeRecording();
-                updateUi();
-                return;
-            } else if (mRecorder.state() == Recorder.RECORDING_STATE) {
-                mRecorder.pauseRecording();
-                updateUi();
-                return;
-            }
-            mRemainingTimeCalculator.reset();
-            mRemainingTimeCalculator.setStoragePath(mPath);
-            mRecorder.setStoragePath(mStoragePath);
-            if (mPath == StorageUtils.STORAGE_PATH_PHONE_INDEX
-                    && !StorageUtils.isPhoneStorageMounted()) {
-                mSampleInterrupted = true;
-                mErrorUiMessage = getResources().getString(R.string.no_phonestorage);
-                updateUi();
-            } else if (mPath == StorageUtils.STORAGE_PATH_SD_INDEX
-                    && !StorageUtils.isSdMounted(SoundRecorder.this)) {
-                mSampleInterrupted = true;
-                mErrorUiMessage = getResources().getString(R.string.insert_sd_card);
-                updateUi();
-            } else if (!StorageUtils.diskSpaceAvailable(SoundRecorder.this, mPath)) {
-                mSampleInterrupted = true;
-                mErrorUiMessage = getResources().getString(R.string.storage_is_full);
-                updateUi();
-            } else {
-
-                if ((mCallState == TelephonyManager.CALL_STATE_OFFHOOK) &&
-                    (mAudioSourceType == MediaRecorder.AudioSource.MIC)) {
-                    mAudioSourceType = MediaRecorder.AudioSource.VOICE_UPLINK;
-                    Log.e(TAG, "Selected Voice Tx only Source: sourcetype" + mAudioSourceType);
+            case R.id.recordButton:
+                Log.d("_____++++++______", "recordButton");
+                Thread thread = new Thread(this);
+                thread.start();
+                if (mRecorder.state() == Recorder.PAUSE_STATE) {
+                    mRecorder.resumeRecording();
+                    updateUi();
+                    return;
+                } else if (mRecorder.state() == Recorder.RECORDING_STATE) {
+                    mRecorder.pauseRecording();
+                    updateUi();
+                    return;
                 }
-                if (AUDIO_AMR.equals(mRequestedType)) {
-                    mRemainingTimeCalculator.setBitRate(BITRATE_AMR);
-                    mRecorder.setChannels(1);
-                    mRecorder.setSamplingRate(SAMPLERATE_8000);
-                    mRecorder.startRecording(MediaRecorder.OutputFormat.RAW_AMR, ".amr",this,
-                            mAudioSourceType, MediaRecorder.AudioEncoder.AMR_NB);
-                }/* else if (AUDIO_EVRC.equals(mRequestedType)) {
+                mRemainingTimeCalculator.reset();
+                mRemainingTimeCalculator.setStoragePath(mPath);
+                mRecorder.setStoragePath(mStoragePath);
+                if (mPath == StorageUtils.STORAGE_PATH_PHONE_INDEX
+                        && !StorageUtils.isPhoneStorageMounted()) {
+                    mSampleInterrupted = true;
+                    mErrorUiMessage = getResources().getString(R.string.no_phonestorage);
+                    updateUi();
+                } else if (mPath == StorageUtils.STORAGE_PATH_SD_INDEX
+                        && !StorageUtils.isSdMounted(SoundRecorder.this)) {
+                    mSampleInterrupted = true;
+                    mErrorUiMessage = getResources().getString(R.string.insert_sd_card);
+                    updateUi();
+                } else if (!StorageUtils.diskSpaceAvailable(SoundRecorder.this, mPath)) {
+                    mSampleInterrupted = true;
+                    mErrorUiMessage = getResources().getString(R.string.storage_is_full);
+                    updateUi();
+                } else {
+
+                    if ((mCallState == TelephonyManager.CALL_STATE_OFFHOOK) &&
+                            (mAudioSourceType == MediaRecorder.AudioSource.MIC)) {
+                        mAudioSourceType = MediaRecorder.AudioSource.VOICE_UPLINK;
+                        Log.e(TAG, "Selected Voice Tx only Source: sourcetype" + mAudioSourceType);
+                    }
+                    if (AUDIO_AMR.equals(mRequestedType)) {
+                        mRemainingTimeCalculator.setBitRate(BITRATE_AMR);
+                        mRecorder.setChannels(1);
+                        mRecorder.setSamplingRate(SAMPLERATE_8000);
+                        mRecorder.startRecording(MediaRecorder.OutputFormat.RAW_AMR, ".amr", this,
+                                mAudioSourceType, MediaRecorder.AudioEncoder.AMR_NB);
+                    }/* else if (AUDIO_EVRC.equals(mRequestedType)) {
                     mRemainingTimeCalculator.setBitRate(BITRATE_EVRC);
                     mRecorder.setChannels(1);
                     mRecorder.setSamplingRate(SAMPLERATE_8000);
@@ -762,29 +737,29 @@ public class SoundRecorder extends Activity
                     mRecorder.setChannels(1);
                     mRecorder.startRecording(MediaRecorder.OutputFormat.QCP, ".qcp", this,
                                          mAudioSourceType, MediaRecorder.AudioEncoder.QCELP);
-                } */else if (AUDIO_3GPP.equals(mRequestedType)) {
-                    mRemainingTimeCalculator.setBitRate(BITRATE_3GPP);
-                    mRecorder.startRecording(MediaRecorder.OutputFormat.THREE_GPP, ".3gpp",this,
-                              mAudioSourceType, MediaRecorder.AudioEncoder.AMR_NB);
-                } else if (AUDIO_AAC_MP4.equals(mRequestedType)) {
-                    setBitRate(BITRATE_AAC);
-                    mRecorder.setSamplingRate(SAMPLERATE_MULTI_CH);
-                    mRecorder.setChannels(2);
-                    mRecorder.startRecording(MediaRecorder.OutputFormat.THREE_GPP, ".aac",this,
-                              mAudioSourceType,MediaRecorder.AudioEncoder.AAC);
-                } else if (AUDIO_AAC_5POINT1_CHANNEL.equals(mRequestedType)) {
-                    //AAC  2-channel recording
-                    if (true == bSSRSupported) {
-                      mRemainingTimeCalculator.setBitRate(BITRATE_AAC);
-                      mRecorder.setChannels(2);
-                      mRecorder.setSamplingRate(SAMPLERATE_MULTI_CH);
-                      mAudioSourceType = MediaRecorder.AudioSource.MIC;
-                      mRecorder.startRecording(MediaRecorder.OutputFormat.THREE_GPP, ".3gpp",this,
+                } */ else if (AUDIO_3GPP.equals(mRequestedType)) {
+                        mRemainingTimeCalculator.setBitRate(BITRATE_3GPP);
+                        mRecorder.startRecording(MediaRecorder.OutputFormat.THREE_GPP, ".3gpp", this,
+                                mAudioSourceType, MediaRecorder.AudioEncoder.AMR_NB);
+                    } else if (AUDIO_AAC_MP4.equals(mRequestedType)) {
+                        setBitRate(BITRATE_AAC);
+                        mRecorder.setSamplingRate(SAMPLERATE_MULTI_CH);
+                        mRecorder.setChannels(2);
+                        mRecorder.startRecording(MediaRecorder.OutputFormat.THREE_GPP, ".aac", this,
                                 mAudioSourceType, MediaRecorder.AudioEncoder.AAC);
-                    } else {
-                      throw new IllegalArgumentException("Invalid output file type requested");
-                    }
-                } /*else if (AUDIO_WAVE_6CH_LPCM.equals(mRequestedType)) {
+                    } else if (AUDIO_AAC_5POINT1_CHANNEL.equals(mRequestedType)) {
+                        //AAC  2-channel recording
+                        if (true == bSSRSupported) {
+                            mRemainingTimeCalculator.setBitRate(BITRATE_AAC);
+                            mRecorder.setChannels(2);
+                            mRecorder.setSamplingRate(SAMPLERATE_MULTI_CH);
+                            mAudioSourceType = MediaRecorder.AudioSource.MIC;
+                            mRecorder.startRecording(MediaRecorder.OutputFormat.THREE_GPP, ".3gpp", this,
+                                    mAudioSourceType, MediaRecorder.AudioEncoder.AAC);
+                        } else {
+                            throw new IllegalArgumentException("Invalid output file type requested");
+                        }
+                    } /*else if (AUDIO_WAVE_6CH_LPCM.equals(mRequestedType)) {
                     //WAVE LPCM  6-channel recording
                     if (true == bSSRSupported) {
                       mRemainingTimeCalculator.setBitRate(BITRATE_LPCM);
@@ -796,41 +771,42 @@ public class SoundRecorder extends Activity
                     } else {
                       throw new IllegalArgumentException("Invalid output file type requested");
                     }
-                } */else if (AUDIO_WAVE_2CH_LPCM.equals(mRequestedType)) {
-                    // WAVE LPCM 2-channel recording
-                    mRemainingTimeCalculator.setBitRate(BITRATE_LPCM);
-                    mRecorder.setChannels(2);
-                    mRecorder.setSamplingRate(SAMPLERATE_MULTI_CH);
-                    mRecorder.startRecording(/*MediaRecorder.OutputFormat.WAVE*/3,//modify by hezhongyang @20161122 for bug 130945
-                            ".wav",this,mAudioSourceType, /*MediaRecorder.AudioEncoder.LPCM*/MediaRecorder.AudioEncoder.AMR_NB);//modify by hezhongyang @20161122 for bug 130945
-                } else if (AUDIO_AMR_WB.equals(mRequestedType)) {
-                    mRemainingTimeCalculator.setBitRate(BITRATE_AMR_WB);
-                    mRecorder.setSamplingRate(BITRATE_AMR_WB);
-                    mRecorder.startRecording(mAudioOutputFormat, mAmrWidebandExtension,this,
-                              mAudioSourceType, MediaRecorder.AudioEncoder.AMR_WB);
+                } */ else if (AUDIO_WAVE_2CH_LPCM.equals(mRequestedType)) {
+                        // WAVE LPCM 2-channel recording
+                        mRemainingTimeCalculator.setBitRate(BITRATE_LPCM);
+                        mRecorder.setChannels(2);
+                        mRecorder.setSamplingRate(SAMPLERATE_MULTI_CH);
+                        mRecorder.startRecording(/*MediaRecorder.OutputFormat.WAVE*/3,//modify by hezhongyang @20161122 for bug 130945
+                                ".wav", this, mAudioSourceType, /*MediaRecorder.AudioEncoder.LPCM*/MediaRecorder.AudioEncoder.AMR_NB);//modify by hezhongyang @20161122 for bug 130945
+                    } else if (AUDIO_AMR_WB.equals(mRequestedType)) {
+                        mRemainingTimeCalculator.setBitRate(BITRATE_AMR_WB);
+                        mRecorder.setSamplingRate(BITRATE_AMR_WB);
+                        mRecorder.startRecording(mAudioOutputFormat, mAmrWidebandExtension, this,
+                                mAudioSourceType, MediaRecorder.AudioEncoder.AMR_WB);
 
-                } else {
-                    throw new IllegalArgumentException("Invalid output file type requested");
-                }
+                    } else {
+                        throw new IllegalArgumentException("Invalid output file type requested");
+                    }
 
-                if (mMaxFileSize != -1) {
-                    mRemainingTimeCalculator.setFileSizeLimit(
-                            mRecorder.sampleFile(), mMaxFileSize);
+                    if (mMaxFileSize != -1) {
+                        mRemainingTimeCalculator.setFileSizeLimit(
+                                mRecorder.sampleFile(), mMaxFileSize);
+                    }
+                    mRecorderStop = false;
+                    mRecorderProcessed = false;
                 }
-                mRecorderStop = false;
-                mRecorderProcessed = false;
-            }
-            invalidateOptionsMenu();
-            break;
-        case R.id.stopButton:
-            Log.d("stopButton","press_________________");
-            mRecorder.stop();
-            showRenameDialogIfNeed();
-            //mVUMeter.resetAngle();
-            invalidateOptionsMenu();
-            break;
+                invalidateOptionsMenu();
+                break;
+            case R.id.stopButton:
+                Log.d("stopButton", "press_________________");
+                mRecorder.stop();
+                showRenameDialogIfNeed();
+                //mVUMeter.resetAngle();
+                invalidateOptionsMenu();
+                break;
         }
     }
+
     private void makeActionOverflowMenuShown() {
         try {
             ViewConfiguration config = ViewConfiguration.get(this);
@@ -845,10 +821,10 @@ public class SoundRecorder extends Activity
     }
 
     private boolean acceptSample(String newName) {
-        Log.d("______SC_______","sampleFile + "+mRecorder.sampleFile());
+        Log.d("______SC_______", "sampleFile + " + mRecorder.sampleFile());
         boolean isExists = FileUtils.exists(mRecorder.sampleFile());
         if (!isExists) {
-            Toast.makeText(SoundRecorder.this, R.string.file_deleted,Toast.LENGTH_SHORT).show();
+            Toast.makeText(SoundRecorder.this, R.string.file_deleted, Toast.LENGTH_SHORT).show();
         }
         if (newName != null && !newName.equals(getLastFileName(false))) {
             mRecorder.renameSampleFile(newName);
@@ -859,18 +835,18 @@ public class SoundRecorder extends Activity
         if (isExists) {
             saveSample(false);
         } else {
-            Log.d("______SC_______","reset mRecorder");
+            Log.d("______SC_______", "reset mRecorder");
             // reset mRecorder and restore UI.
             mRecorder.clear();
             updateUi();
         }
         //mVUMeter.resetAngle();
         if (mExitAfterRecord) {
-            Log.d("______SC_______","mExitAfterRecord"+mExitAfterRecord);
+            Log.d("______SC_______", "mExitAfterRecord" + mExitAfterRecord);
             finish();
             return false;
         }
-        Log.d("______SC_______","return true");
+        Log.d("______SC_______", "return true");
         return true;
     }
 
@@ -960,24 +936,24 @@ public class SoundRecorder extends Activity
                             case R.string.storage_setting_sdcard_item:
                                 mStoragePath = StorageUtils.getSdStoragePath(SoundRecorder.this);
                                 mPath = StorageUtils.STORAGE_PATH_SD_INDEX;
-                                Log.d("______________","mStoragePath"+mStoragePath);
+                                Log.d("______________", "mStoragePath" + mStoragePath);
                                 mPrefsStoragePathEditor.putString("storagePath", mStoragePath);
                                 mPrefsStoragePathEditor.putInt("path", mPath);
                                 mPrefsStoragePathEditor.commit();
-                                Log.d("______________","isSdMounted"+StorageUtils.isSdMounted(SoundRecorder.this));
+                                Log.d("______________", "isSdMounted" + StorageUtils.isSdMounted(SoundRecorder.this));
                                 if (mPath == StorageUtils.STORAGE_PATH_SD_INDEX
                                         && !StorageUtils.isSdMounted(SoundRecorder.this)) {
-                                    Log.d("______________","insert_sd_card");
+                                    Log.d("______________", "insert_sd_card");
                                     mSdExist = false;
                                     mSampleInterrupted = true;
                                     mErrorUiMessage = getResources()
                                             .getString(R.string.insert_sd_card);
                                 } else {
-									//add by hezhongyang @20161125 for bug 131893 start
-									mSdExist = true;
-									mSampleInterrupted = false;
+                                    //add by hezhongyang @20161125 for bug 131893 start
+                                    mSdExist = true;
+                                    mSampleInterrupted = false;
                                     mErrorUiMessage = null;
-									//add by hezhongyang @20161125 for bug 131893 end
+                                    //add by hezhongyang @20161125 for bug 131893 end
                                 }
                                 updateUi();
                                 break;
@@ -1051,14 +1027,14 @@ public class SoundRecorder extends Activity
         // TODO Auto-generated method stub
         switch (item.getItemId()) {
             case R.id.menu_item_keyboard:
-                if(mRecorder.state() == Recorder.IDLE_STATE) {
+                if (mRecorder.state() == Recorder.IDLE_STATE) {
                     InputMethodManager inputMgr =
-                            (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                            (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                     inputMgr.toggleSoftInput(0, 0);
                 }
                 break;
             case R.id.menu_item_filetype:
-                if(mRecorder.state() == Recorder.IDLE_STATE) {
+                if (mRecorder.state() == Recorder.IDLE_STATE) {
                     openOptionDialog(SETTING_TYPE_FILE_TYPE);
                 }
                 break;
@@ -1082,9 +1058,9 @@ public class SoundRecorder extends Activity
         } else {
             return super.onKeyUp(keyCode, event);
         }*/
-    	return super.onKeyUp(keyCode, event);
+        return super.onKeyUp(keyCode, event);
     }
-	
+
 
     @Override
     public void onBackPressed() {
@@ -1094,7 +1070,7 @@ public class SoundRecorder extends Activity
                 break;
             case Recorder.PAUSE_STATE:
             case Recorder.RECORDING_STATE:
-                Log.d("_____++++++______","onBackPressed");
+                Log.d("_____++++++______", "onBackPressed");
                 try {
                     Thread.sleep(BACK_KEY_WAIT);
                 } catch (InterruptedException ex) {
@@ -1108,171 +1084,171 @@ public class SoundRecorder extends Activity
     // Voicememo Adding UI choice for the user to get the format needed
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-         Log.v(TAG, "dispatchKeyEvent with key event" + event);
+        Log.v(TAG, "dispatchKeyEvent with key event" + event);
 
-    if(event.getKeyCode() == KeyEvent.KEYCODE_6 && event.getAction() == event.ACTION_UP){
-       //Ignore ACTION_DOWN to avoid showing error dialog twice
-       if((mAudioSourceType == MediaRecorder.AudioSource.VOICE_CALL) ||
-          (mAudioSourceType == MediaRecorder.AudioSource.VOICE_DOWNLINK)||
-          (mAudioSourceType == MediaRecorder.AudioSource.VOICE_UPLINK ) ||
-          ((mAudioSourceType == MediaRecorder.AudioSource.MIC) &&
-           (mAudioManager.getMode() == AudioManager.MODE_IN_CALL))) {
-          mAudioSourceType = MediaRecorder.AudioSource.MIC;//Default type
-          Resources res = getResources();
-          String message = null;
-          message = res.getString(R.string.error_mediadb_aacincall);
-          new AlertDialog.Builder(this)
-          .setTitle(R.string.app_name)
-          .setMessage(message)
-          .setPositiveButton(R.string.button_ok, null)
-          .setCancelable(false)
-          .show();
-          return super.dispatchKeyEvent(event);
-       }
-    }
+        if (event.getKeyCode() == KeyEvent.KEYCODE_6 && event.getAction() == event.ACTION_UP) {
+            //Ignore ACTION_DOWN to avoid showing error dialog twice
+            if ((mAudioSourceType == MediaRecorder.AudioSource.VOICE_CALL) ||
+                    (mAudioSourceType == MediaRecorder.AudioSource.VOICE_DOWNLINK) ||
+                    (mAudioSourceType == MediaRecorder.AudioSource.VOICE_UPLINK) ||
+                    ((mAudioSourceType == MediaRecorder.AudioSource.MIC) &&
+                            (mAudioManager.getMode() == AudioManager.MODE_IN_CALL))) {
+                mAudioSourceType = MediaRecorder.AudioSource.MIC;//Default type
+                Resources res = getResources();
+                String message = null;
+                message = res.getString(R.string.error_mediadb_aacincall);
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.app_name)
+                        .setMessage(message)
+                        .setPositiveButton(R.string.button_ok, null)
+                        .setCancelable(false)
+                        .show();
+                return super.dispatchKeyEvent(event);
+            }
+        }
 
-    if((event.getKeyCode() == KeyEvent.KEYCODE_1 || event.getKeyCode() == KeyEvent.KEYCODE_2)
-         && (event.getAction() == event.ACTION_UP)){
-       //Ignore ACTION_DOWN to avoid showing error dialog twice
-       if((mAudioManager.getMode() != AudioManager.MODE_IN_CALL) ||
-         (mRequestedType == AUDIO_AAC_MP4)) {
-          mAudioSourceType = MediaRecorder.AudioSource.MIC;//Default type
-          Resources res = getResources();
-          String message = null;
-          if(mAudioManager.getMode() != AudioManager.MODE_IN_CALL) {
-            message = res.getString(R.string.error_mediadb_incall);
-          } else {
-            message = res.getString(R.string.error_mediadb_aacincall);
-          }
-          new AlertDialog.Builder(this)
-          .setTitle(R.string.app_name)
-          .setMessage(message)
-          .setPositiveButton(R.string.button_ok, null)
-          .setCancelable(false)
-          .show();
-          return super.dispatchKeyEvent(event);
-       }
-    }
+        if ((event.getKeyCode() == KeyEvent.KEYCODE_1 || event.getKeyCode() == KeyEvent.KEYCODE_2)
+                && (event.getAction() == event.ACTION_UP)) {
+            //Ignore ACTION_DOWN to avoid showing error dialog twice
+            if ((mAudioManager.getMode() != AudioManager.MODE_IN_CALL) ||
+                    (mRequestedType == AUDIO_AAC_MP4)) {
+                mAudioSourceType = MediaRecorder.AudioSource.MIC;//Default type
+                Resources res = getResources();
+                String message = null;
+                if (mAudioManager.getMode() != AudioManager.MODE_IN_CALL) {
+                    message = res.getString(R.string.error_mediadb_incall);
+                } else {
+                    message = res.getString(R.string.error_mediadb_aacincall);
+                }
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.app_name)
+                        .setMessage(message)
+                        .setPositiveButton(R.string.button_ok, null)
+                        .setCancelable(false)
+                        .show();
+                return super.dispatchKeyEvent(event);
+            }
+        }
         // Intercept some events before they get dispatched to our views.
         boolean ret = false;
         switch (event.getKeyCode()) {
             case KeyEvent.KEYCODE_0: // MIC source (Camcorder)
             {
-              Log.e(TAG, "Selected MIC Source: Key Event" + KeyEvent.KEYCODE_0);
-              mAudioSourceType = MediaRecorder.AudioSource.MIC;
-              if ((mAudioManager.getMode() == AudioManager.MODE_IN_CALL) &&
-                  (event.getAction() == event.ACTION_UP)) {
-                  mAudioSourceType = MediaRecorder.AudioSource.VOICE_UPLINK;
-                  Log.e(TAG, "Selected Voice Tx only Source: sourcetype" + mAudioSourceType);
-              }
-              ret = true;
-              break;
+                Log.e(TAG, "Selected MIC Source: Key Event" + KeyEvent.KEYCODE_0);
+                mAudioSourceType = MediaRecorder.AudioSource.MIC;
+                if ((mAudioManager.getMode() == AudioManager.MODE_IN_CALL) &&
+                        (event.getAction() == event.ACTION_UP)) {
+                    mAudioSourceType = MediaRecorder.AudioSource.VOICE_UPLINK;
+                    Log.e(TAG, "Selected Voice Tx only Source: sourcetype" + mAudioSourceType);
+                }
+                ret = true;
+                break;
             }
 
             case KeyEvent.KEYCODE_1: // Voice Rx Only (Only during Call(
             {
-              Log.e(TAG, "Selected Voice Rx only Source: Key Event" + KeyEvent.KEYCODE_1);
-              mAudioSourceType = MediaRecorder.AudioSource.VOICE_DOWNLINK;
-              ret = true;
-              break;
+                Log.e(TAG, "Selected Voice Rx only Source: Key Event" + KeyEvent.KEYCODE_1);
+                mAudioSourceType = MediaRecorder.AudioSource.VOICE_DOWNLINK;
+                ret = true;
+                break;
             }
 
             case KeyEvent.KEYCODE_2: // Voice Rx+Tx (Only during Call)
             {
-              Log.e(TAG, "Selected Voice Tx+Rx Source: Key Event" + KeyEvent.KEYCODE_2);
-              mAudioSourceType = MediaRecorder.AudioSource.VOICE_CALL;
-              ret = true;
-              break;
+                Log.e(TAG, "Selected Voice Tx+Rx Source: Key Event" + KeyEvent.KEYCODE_2);
+                mAudioSourceType = MediaRecorder.AudioSource.VOICE_CALL;
+                ret = true;
+                break;
             }
 
             case KeyEvent.KEYCODE_3: // Selected AMR codec type
             {
-              Log.e(TAG, "Selected AUDIO_AMR Codec: Key Event" + KeyEvent.KEYCODE_3);
-              mRequestedType = AUDIO_AMR;
-              ret = true;
-              break;
+                Log.e(TAG, "Selected AUDIO_AMR Codec: Key Event" + KeyEvent.KEYCODE_3);
+                mRequestedType = AUDIO_AMR;
+                ret = true;
+                break;
             }
 
             case KeyEvent.KEYCODE_4: // Selected EVRC codec type
             {
-              Log.e(TAG, "Selected Voice AUDIO_EVRC Codec: Key Event" + KeyEvent.KEYCODE_4);
-              mRequestedType = AUDIO_EVRC;
-              ret = true;
-              break;
+                Log.e(TAG, "Selected Voice AUDIO_EVRC Codec: Key Event" + KeyEvent.KEYCODE_4);
+                mRequestedType = AUDIO_EVRC;
+                ret = true;
+                break;
             }
 
             case KeyEvent.KEYCODE_5: // Selected QCELP codec type
             {
-              Log.e(TAG, "Selected AUDIO_QCELP Codec: Key Event" + KeyEvent.KEYCODE_5);
-              mRequestedType = AUDIO_QCELP;
-              ret = true;
-              break;
+                Log.e(TAG, "Selected AUDIO_QCELP Codec: Key Event" + KeyEvent.KEYCODE_5);
+                mRequestedType = AUDIO_QCELP;
+                ret = true;
+                break;
             }
             case KeyEvent.KEYCODE_6: // Selected AAC codec type
             {
-              Log.e(TAG, "Selected AUDIO_AAC_MP4 Codec: Key Event" + KeyEvent.KEYCODE_6);
-              mRequestedType = AUDIO_AAC_MP4;
-              ret = true;
-              break;
+                Log.e(TAG, "Selected AUDIO_AAC_MP4 Codec: Key Event" + KeyEvent.KEYCODE_6);
+                mRequestedType = AUDIO_AAC_MP4;
+                ret = true;
+                break;
             }
             case KeyEvent.KEYCODE_7: // Selected 6 channel wave lpcm codec type
             {
-              if (true == bSSRSupported) {
-                Log.e(TAG, "Selected multichannel AAC Codec: Key Event" + KeyEvent.KEYCODE_7);
-                mRequestedType = AUDIO_AAC_5POINT1_CHANNEL;
-                ret = true;
-              }
-              break;
+                if (true == bSSRSupported) {
+                    Log.e(TAG, "Selected multichannel AAC Codec: Key Event" + KeyEvent.KEYCODE_7);
+                    mRequestedType = AUDIO_AAC_5POINT1_CHANNEL;
+                    ret = true;
+                }
+                break;
             }
             case KeyEvent.KEYCODE_8: // Selected 6 channel AAC recording
             {
                 if (true == bSSRSupported) {
-                Log.e(TAG, "Selected linear pcm Codec: Key Event" + KeyEvent.KEYCODE_7);
-                mRequestedType = AUDIO_WAVE_6CH_LPCM;
-                ret = true;
-              }
-              break;
+                    Log.e(TAG, "Selected linear pcm Codec: Key Event" + KeyEvent.KEYCODE_7);
+                    mRequestedType = AUDIO_WAVE_6CH_LPCM;
+                    ret = true;
+                }
+                break;
             }
             case KeyEvent.KEYCODE_9: // Selected amr-wb codec type in .awb file format
             {
-              Log.e(TAG, "### Selected amr wb Codec in .awb: Key Event" + KeyEvent.KEYCODE_8);
-              mRequestedType = AUDIO_AMR_WB;
-              mAudioOutputFormat = MediaRecorder.OutputFormat.AMR_WB;
-              mAmrWidebandExtension = ".awb";
-              ret = true;
-              break;
+                Log.e(TAG, "### Selected amr wb Codec in .awb: Key Event" + KeyEvent.KEYCODE_8);
+                mRequestedType = AUDIO_AMR_WB;
+                mAudioOutputFormat = MediaRecorder.OutputFormat.AMR_WB;
+                mAmrWidebandExtension = ".awb";
+                ret = true;
+                break;
             }
             case KeyEvent.KEYCODE_A: // Selected amr-wb codec type in .3gpp file format
             {
-              Log.e(TAG, "### Selected awr wb Codec in 3gp: Key Event" + KeyEvent.KEYCODE_9);
-              mRequestedType = AUDIO_AMR_WB;
-              mAmrWidebandExtension = ".3gpp";
-              mAudioOutputFormat = MediaRecorder.OutputFormat.THREE_GPP;
-              ret = true;
-              break;
+                Log.e(TAG, "### Selected awr wb Codec in 3gp: Key Event" + KeyEvent.KEYCODE_9);
+                mRequestedType = AUDIO_AMR_WB;
+                mAmrWidebandExtension = ".3gpp";
+                mAudioOutputFormat = MediaRecorder.OutputFormat.THREE_GPP;
+                ret = true;
+                break;
             }
 
             default:
                 break;
         }
 
-        return ret?ret:super.dispatchKeyEvent(event);
+        return ret ? ret : super.dispatchKeyEvent(event);
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        Log.d("_____++++++______","onStop");
+        Log.d("_____++++++______", "onStop");
         /*if (mRenameDialogShown) {
             finish();
         }*/
         if (SoundRecorderService.isRecording()) {
-            Log.d("_______________","onPause");
+            Log.d("_______________", "onPause");
             Intent intent = new Intent(this, SoundRecorderService.class);
             intent.putExtra(SoundRecorderService.ACTION_NAME,
                     SoundRecorderService.ACTION_ENABLE_MONITOR_REMAIN_TIME);
             startService(intent);
-        }else{
+        } else {
             mRecorder.stop();
         }
     }
@@ -1294,17 +1270,17 @@ public class SoundRecorder extends Activity
         }
 
         // Stop listening for phone state changes.
-        for(int i = 0; i < mPhoneCount; i++) {
+        for (int i = 0; i < mPhoneCount; i++) {
             mTelephonyManager.listen(mPhoneStateListener[i], PhoneStateListener.LISTEN_NONE);
         }
-        Log.d("_____++++++______","onPause");
+        Log.d("_____++++++______", "onPause");
         if (SoundRecorderService.isRecording()) {
-            Log.d("_______________","onPause");
+            Log.d("_______________", "onPause");
             Intent intent = new Intent(this, SoundRecorderService.class);
             intent.putExtra(SoundRecorderService.ACTION_NAME,
                     SoundRecorderService.ACTION_ENABLE_MONITOR_REMAIN_TIME);
             startService(intent);
-        }else{
+        } else {
             mRecorder.stop();
         }
         /*mRecorder.stop();
@@ -1338,7 +1314,7 @@ public class SoundRecorder extends Activity
                 uri = DatabaseUtils.addToMediaDB(SoundRecorder.this, mRecorder.sampleFile(),
                         mRecorder.sampleLengthMillis(), mRequestedType);
             }
-        } catch(UnsupportedOperationException ex) {  // Database manipulation failure
+        } catch (UnsupportedOperationException ex) {  // Database manipulation failure
             return false;
         } finally {
             if (uri == null && !mDataExist) {
@@ -1365,7 +1341,7 @@ public class SoundRecorder extends Activity
     // Show a dialog to rename file name.
     private void showRenameDialogIfNeed() {
         if (mRecorder == null) return;
-        Log.d("______SC_______","mRecorderLength"+mRecorder.sampleLength()+mRecorder.sampleFile());
+        Log.d("______SC_______", "mRecorderLength" + mRecorder.sampleLength() + mRecorder.sampleFile());
         if (mRecorder.sampleLength() > 0) {
             mRecorderStop = true;
             RenameDialogBuilder builder = new RenameDialogBuilder(this, mRecorder.sampleFile());
@@ -1375,7 +1351,7 @@ public class SoundRecorder extends Activity
                     new RenameDialogBuilder.OnPositiveListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which, String newName) {
-                            Log.d("______SC_______","OnPositiveListener"+newName);
+                            Log.d("______SC_______", "OnPositiveListener" + newName);
                             if (acceptSample(newName)) {
                                 startListActivity();
                             }
@@ -1384,7 +1360,7 @@ public class SoundRecorder extends Activity
             builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
                 @Override
                 public void onDismiss(DialogInterface dialog) {
-                    Log.d("______SC_______","setOnDismissListener");
+                    Log.d("______SC_______", "setOnDismissListener");
                     discardSample();
                     mRenameDialogShown = false;
                 }
@@ -1392,7 +1368,7 @@ public class SoundRecorder extends Activity
             builder.setOnCancelListener(new DialogInterface.OnCancelListener() {
                 @Override
                 public void onCancel(DialogInterface dialog) {
-                    Log.d("______SC_______","setOnCancelListener");
+                    Log.d("______SC_______", "setOnCancelListener");
                     discardSample();
                     mRenameDialogShown = false;
                 }
@@ -1401,13 +1377,13 @@ public class SoundRecorder extends Activity
             builder.show();
             mRenameDialogShown = true;
         } else {
-            Log.d("______SC_______","mRecorder.delete");
+            Log.d("______SC_______", "mRecorder.delete");
             mRecorder.delete();
         }
     }
 
     private void startListActivity() {
-        Log.d("______SC_______","startListActivity");
+        Log.d("______SC_______", "startListActivity");
         Intent intent = new Intent(SoundRecorder.this, FileListActivity.class);
         startActivity(intent);
     }
@@ -1422,7 +1398,7 @@ public class SoundRecorder extends Activity
      */
     @Override
     public void onDestroy() {
-        Log.d("_____++++++______","onDestroy");
+        Log.d("_____++++++______", "onDestroy");
         isAlive = false;
         if (mSDCardMountEventReceiver != null) {
             unregisterReceiver(mSDCardMountEventReceiver);
@@ -1525,11 +1501,11 @@ public class SoundRecorder extends Activity
             switch (limit) {
                 case RemainingTimeCalculator.DISK_SPACE_LIMIT:
                     mErrorUiMessage
-                        = getResources().getString(R.string.storage_is_full);
+                            = getResources().getString(R.string.storage_is_full);
                     break;
                 case RemainingTimeCalculator.FILE_SIZE_LIMIT:
                     mErrorUiMessage
-                        = getResources().getString(R.string.max_length_reached);
+                            = getResources().getString(R.string.max_length_reached);
                     break;
                 default:
                     mErrorUiMessage = null;
@@ -1545,8 +1521,7 @@ public class SoundRecorder extends Activity
         String timeStr = "";
 
         // display available time, if less than 10 minutes
-        if (t < 599)
-        {
+        if (t < 599) {
             timeStr = String.format(mTimerFormat, t / 60, t % 60);
         }
 
@@ -1720,15 +1695,16 @@ public class SoundRecorder extends Activity
         }
         if (message != null) {
             new AlertDialog.Builder(this)
-                .setTitle(R.string.app_name)
-                .setMessage(message)
-                .setPositiveButton(R.string.button_ok, (true==isExit)?
-                    (new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int whichButton) {
-                            finish();
-                        }}):null)
-                .setCancelable(false)
-                .show();
+                    .setTitle(R.string.app_name)
+                    .setMessage(message)
+                    .setPositiveButton(R.string.button_ok, (true == isExit) ?
+                            (new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int whichButton) {
+                                    finish();
+                                }
+                            }) : null)
+                    .setCancelable(false)
+                    .show();
         }
     }
 
@@ -1757,7 +1733,7 @@ public class SoundRecorder extends Activity
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d("_____++++++______","RecorderReceiver");
+            Log.d("_____++++++______", "RecorderReceiver");
             if (intent.hasExtra(SoundRecorderService.RECORDER_SERVICE_BROADCAST_STATE)) {
                 boolean isRecording = intent.getBooleanExtra(
                         SoundRecorderService.RECORDER_SERVICE_BROADCAST_STATE, false);

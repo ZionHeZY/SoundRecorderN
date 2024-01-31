@@ -1,32 +1,3 @@
-/*
- * Copyright (c) 2016, The Linux Foundation. All rights reserved.
-
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
- *     * Neither the name of The Linux Foundation nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
-
- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 package com.android.soundrecorder.filelist;
 
 import android.content.ContentResolver;
@@ -68,8 +39,11 @@ public class FileListRecyclerAdapter extends RecyclerView.Adapter {
 
     public interface ItemListener {
         void openItem(BaseListItem item);
+
         void closeItem();
+
         MediaItem getPlayingItem();
+
         void updatePlayerItem(MediaItem item);
     }
 
@@ -81,7 +55,9 @@ public class FileListRecyclerAdapter extends RecyclerView.Adapter {
 
     public interface ActionModeListener {
         void showActionMode();
+
         void exitActionMode();
+
         void setSelectedCount(int selectedCount, int totalCount, List<BaseListItem> items);
     }
 
@@ -92,7 +68,7 @@ public class FileListRecyclerAdapter extends RecyclerView.Adapter {
     }
 
     public FileListRecyclerAdapter(Context context, String[] targetFolderArray,
-            String[] targetSourceArray) {
+                                   String[] targetSourceArray) {
         mContentResolver = context.getContentResolver();
         mTargetFolderArray = targetFolderArray;
         mTargetSourceArray = targetSourceArray;
@@ -108,7 +84,7 @@ public class FileListRecyclerAdapter extends RecyclerView.Adapter {
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
-		//boolean isHH=false;
+        //boolean isHH=false;
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         if (viewType == BaseListItem.TYPE_FOLDER) {
@@ -120,13 +96,13 @@ public class FileListRecyclerAdapter extends RecyclerView.Adapter {
             View recordingItem = LayoutInflater.from(viewGroup.getContext()).inflate(
                     R.layout.file_list_item_recording, null);
             recordingItem.setLayoutParams(lp);
-			//add by hezhongyang @20161129 for bug 132155 start
-			//String strTimeFormat  = Settings.System.getString(mContentResolver,
-			//Settings.System.TIME_12_24);
+            //add by hezhongyang @20161129 for bug 132155 start
+            //String strTimeFormat  = Settings.System.getString(mContentResolver,
+            //Settings.System.TIME_12_24);
             boolean is24 = DateFormat.is24HourFormat(viewGroup.getContext());
-			//isHH=strTimeFormat.equals("24");
-            return new MediaItemViewHolder(recordingItem, R.id.file_list_recording_layout,is24);
-			//add by hezhongyang @20161129 for bug 132155 end
+            //isHH=strTimeFormat.equals("24");
+            return new MediaItemViewHolder(recordingItem, R.id.file_list_recording_layout, is24);
+            //add by hezhongyang @20161129 for bug 132155 end
         }
     }
 
@@ -134,10 +110,10 @@ public class FileListRecyclerAdapter extends RecyclerView.Adapter {
     public void onBindViewHolder(final RecyclerView.ViewHolder viewHolder, final int position) {
         if (viewHolder instanceof BaseViewHolder) {
             if (mItemsList != null && mItemsList.size() > position) {
-                ((BaseViewHolder)viewHolder).setSelectionMode(mInSelectionMode);
+                ((BaseViewHolder) viewHolder).setSelectionMode(mInSelectionMode);
                 mItemsList.get(position);
-                ((BaseViewHolder)viewHolder).setItem(mItemsList.get(position));
-                ((BaseViewHolder)viewHolder)
+                ((BaseViewHolder) viewHolder).setItem(mItemsList.get(position));
+                ((BaseViewHolder) viewHolder)
                         .setViewHolderItemListener(new BaseViewHolder.ViewHolderItemListener() {
                             @Override
                             public void onItemChecked(BaseListItem item, boolean isChecked) {

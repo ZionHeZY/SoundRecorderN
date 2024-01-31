@@ -1,5 +1,3 @@
-
-
 package com.android.soundrecorder;
 
 import android.content.Context;
@@ -54,9 +52,12 @@ public class Recorder implements MediaRecorder.OnInfoListener {
 
     public interface OnStateChangedListener {
         public void onStateChanged(int state);
+
         public void onError(int error);
+
         public void onInfo(int what, int extra);
     }
+
     SoundRecorder mOnStateChangedListener = null;
 
     MediaRecorder.OnErrorListener mMRErrorListener = new MediaRecorder.OnErrorListener() {
@@ -80,12 +81,12 @@ public class Recorder implements MediaRecorder.OnInfoListener {
             mStoragePath = StorageUtils.getPhoneStoragePath();
         }
         mContext = context;
-        mAudioManager = (AudioManager)mContext.getSystemService(Context.AUDIO_SERVICE);
+        mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
         syncStateWithService();
     }
 
     public boolean syncStateWithService() {
-        Log.d("______SC_______","syncStateWithService");
+        Log.d("______SC_______", "syncStateWithService");
         if (SoundRecorderService.isRecording()) {
             mState = RECORDING_STATE;
             mSampleStart = SoundRecorderService.getStartTime();
@@ -177,7 +178,7 @@ public class Recorder implements MediaRecorder.OnInfoListener {
     }
 
     public File sampleFile() {
-        Log.d("______SC_______","mSampleFile");
+        Log.d("______SC_______", "mSampleFile");
         return mSampleFile;
     }
 
@@ -224,7 +225,7 @@ public class Recorder implements MediaRecorder.OnInfoListener {
     }
 
     public void startRecording(int outputfileformat, String extension,
-                   Context context,int audiosourcetype, int codectype) {
+                               Context context, int audiosourcetype, int codectype) {
         stop();
 
         if (mSampleFile != null) {
@@ -247,14 +248,14 @@ public class Recorder implements MediaRecorder.OnInfoListener {
             if (!"".equals(prefix)) {
                 //long index = FileUtils.getSuitableIndexOfRecording(prefix);
                 //mSampleFile = createTempFile(prefix, Long.toString(index), extension, sampleDir);
-                Log.d("+++++++++++++++++++","sampleDir++"+sampleDir+"prefix"+prefix+"extension"+extension+"sampleDir"+sampleDir);
-                mSampleFile = createTempFile(context, prefix+"-", extension, sampleDir);
+                Log.d("+++++++++++++++++++", "sampleDir++" + sampleDir + "prefix" + prefix + "extension" + extension + "sampleDir" + sampleDir);
+                mSampleFile = createTempFile(context, prefix + "-", extension, sampleDir);
             } else {
                 prefix = SAMPLE_PREFIX + '-';
                 mSampleFile = createTempFile(context, prefix, extension, sampleDir);
             }
         } catch (IOException e) {
-            Log.d("+++++++++++++++++++","Error");
+            Log.d("+++++++++++++++++++", "Error");
             setError(SDCARD_ACCESS_ERROR);
             return;
         }
@@ -268,7 +269,7 @@ public class Recorder implements MediaRecorder.OnInfoListener {
                 mMaxDuration,
                 audiosourcetype,
                 codectype);
-        Log.d("+++++++++++++++++++","startRecording");
+        Log.d("+++++++++++++++++++", "startRecording");
         mSampleStart = System.currentTimeMillis();
         setState(RECORDING_STATE);
         stopAudioPlayback();
@@ -289,12 +290,12 @@ public class Recorder implements MediaRecorder.OnInfoListener {
 
     public void stopRecording() {
         try {
-            if ((PAUSE_STATE == mState) && (Build.VERSION.SDK_INT >= 23)){
+            if ((PAUSE_STATE == mState) && (Build.VERSION.SDK_INT >= 23)) {
                 resumeRecording();
                 setState(RECORDING_STATE);
             }
             SoundRecorderService.stopRecording(mContext);
-        }catch (RuntimeException exception){
+        } catch (RuntimeException exception) {
             setError(INTERNAL_ERROR);
             Log.e(TAG, "Stop Failed");
         }
@@ -336,7 +337,7 @@ public class Recorder implements MediaRecorder.OnInfoListener {
     public File createTempFile(String prefix, String fileName, String suffix, File directory)
             throws IOException {
         // Force a prefix null check first
-        Log.d("+++++++++++++++++++","createTempFile");
+        Log.d("+++++++++++++++++++", "createTempFile");
         if (prefix.length() < 3) {
             throw new IllegalArgumentException("prefix must be at least 3 characters");
         }
@@ -350,12 +351,12 @@ public class Recorder implements MediaRecorder.OnInfoListener {
         }
 
         File result;
-        Log.d("+++++++++++++++++++","tmpDirFile"+tmpDirFile);
+        Log.d("+++++++++++++++++++", "tmpDirFile" + tmpDirFile);
         do {
             result = new File(tmpDirFile, prefix + fileName + suffix);
-            Log.d("+++++++++++++++++++","result"+result);
+            Log.d("+++++++++++++++++++", "result" + result);
         } while (!result.createNewFile());
-        Log.d("+++++++++++++++++++","return result"+result);
+        Log.d("+++++++++++++++++++", "return result" + result);
         return result;
     }
 
@@ -368,7 +369,7 @@ public class Recorder implements MediaRecorder.OnInfoListener {
             currentTime = currentTime.replaceAll("[\\\\*|\":<>/?]", "_").replaceAll(" ",
                     "\\\\" + " ");
         }
-        Log.d("+++++++++++++++++++","currentTime"+currentTime);
+        Log.d("+++++++++++++++++++", "currentTime" + currentTime);
         return createTempFile(prefix, currentTime, suffix, directory);
     }
 
@@ -388,18 +389,18 @@ public class Recorder implements MediaRecorder.OnInfoListener {
      * the MediaPlaybackService to pause playback.
      */
     private void stopAudioPlayback() {
-        AudioManager am = (AudioManager)mContext.getSystemService(Context.AUDIO_SERVICE);
+        AudioManager am = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
         am.requestAudioFocus(mAudioFocusListener,
                 AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
     }
 
     private OnAudioFocusChangeListener mAudioFocusListener =
-        new OnAudioFocusChangeListener() {
-            public void onAudioFocusChange(int focusChange) {
-                mRecorderHandler.obtainMessage(FOCUSCHANGE, focusChange, 0)
-                    .sendToTarget();
-        }
-    };
+            new OnAudioFocusChangeListener() {
+                public void onAudioFocusChange(int focusChange) {
+                    mRecorderHandler.obtainMessage(FOCUSCHANGE, focusChange, 0)
+                            .sendToTarget();
+                }
+            };
 
     private Handler mRecorderHandler = new Handler() {
         @Override
