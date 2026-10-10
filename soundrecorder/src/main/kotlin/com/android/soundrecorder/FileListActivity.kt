@@ -357,22 +357,35 @@ class FileListActivity : Activity() {
 
     private fun renameSelected() {
         val entry = selectedRows().singleOrNull()?.entry ?: return
-        val content = layoutInflater.inflate(R.layout.rename_dialog, null)
+        val builder = AlertDialog.Builder(this)
+        val content = android.view.LayoutInflater.from(builder.context).inflate(R.layout.rename_dialog, null)
         val input = content.findViewById<EditText>(R.id.rename_edit_text).apply {
             setText(entry.name.substringBeforeLast('.', entry.name)); selectAll()
         }
-        val dialog = AlertDialog.Builder(this).setTitle(R.string.rename_dialog_title).setView(content)
+        val dialog = builder.setTitle(R.string.rename_dialog_title).setView(content)
             .setNegativeButton(android.R.string.cancel, null).setPositiveButton(R.string.rename_dialog_save, null).create()
         dialog.setCanceledOnTouchOutside(false)
         dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
         dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getColor(R.color.negative_button_color))
             input.requestFocusFromTouch()
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val positive = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            positive.setOnClickListener {
                 val name = input.text.toString().trim()
-                if (name.isBlank() || name == "." || name == ".." || name.any { it == '/' || it == '\\' || it.isISOControl() }) input.error = getString(R.string.rename_dialog_info_null)
-                else if (name.toByteArray(Charsets.UTF_8).size > 250) input.error = getString(R.string.rename_dialog_info_length_limit)
-                else { dialog.dismiss(); mutate(Mutation("rename", name, listOf(entry))) }
+                val error = when {
+                    name.isBlank() || name == "." || name == ".." || name.any { it == '/' || it == '\\' || it.isISOControl() } -> R.string.rename_dialog_info_null
+                    name.toByteArray(Charsets.UTF_8).size > 250 -> R.string.rename_dialog_info_length_limit
+                    else -> null
+                }
+                if (error != null) {
+                    input.error = getString(error)
+                    input.requestFocus()
+                } else { dialog.dismiss(); mutate(Mutation("rename", name, listOf(entry))) }
+            }
+            input.setOnEditorActionListener { _, action, _ ->
+                if (action == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
+                    positive.performClick()
+                    true
+                } else false
             }
         }
         dialog.show()
@@ -380,7 +393,8 @@ class FileListActivity : Activity() {
     private fun deleteSelected() {
         val targets = selectedEntries()
         if (targets.isEmpty()) return
-        AlertDialog.Builder(this).setMessage(resources.getQuantityString(R.plurals.delete_selection_message, selected.size))
+        AlertDialog.Builder(this).setTitle(R.string.delete_dialog_confirm)
+            .setMessage(resources.getQuantityString(R.plurals.delete_selection_message, selected.size))
             .setNegativeButton(android.R.string.cancel, null)
             .setPositiveButton(R.string.delete_dialog_confirm) { _, _ -> mutate(Mutation("delete", null, targets)) }.show()
     }

@@ -42,6 +42,7 @@ class RecordingSmoke : Instrumentation() {
         try {
             check(store.recoverDrafts().isEmpty()) { "Smoke requires no existing unsaved recordings; save them first." }
             activity = startActivitySync(Intent(targetContext, SoundRecorder::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            verifyWaveform(checkNotNull(activity))
             runOnMainSync { bound = targetContext.bindService(Intent(targetContext, SoundRecorderService::class.java), connection, Context.BIND_AUTO_CREATE) }
             check(connected.await(10, TimeUnit.SECONDS)) { "Service did not bind" }
             val recorder = checkNotNull(service)
@@ -131,6 +132,14 @@ class RecordingSmoke : Instrumentation() {
             }
             val root = checkNotNull(uiAutomation.rootInActiveWindow)
             val input = checkNotNull(findEditable(root))
+            check(input.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
+                putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "../invalid")
+            }))
+            activate(targetContext.getString(R.string.rename_dialog_save))
+            await("Invalid name retained dialog") { input.refresh() && input.error != null }
+            check(snapshot(recorder).state == RecordingState.READY && snapshot(recorder).draft?.file?.exists() == true) {
+                "Invalid dialog submission lost the recording"
+            }
             val uiName = "$prefix-ui"
             check(input.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
                 putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, uiName)
@@ -138,7 +147,9 @@ class RecordingSmoke : Instrumentation() {
             val confirm = root.findAccessibilityNodeInfosByText(targetContext.getString(R.string.rename_dialog_save)).last { it.isEnabled && it.isClickable }
             val rotation = addMonitor(SoundRecorder::class.java.name, null, false)
             val libraryMonitor = addMonitor(FileListActivity::class.java.name, null, false)
-            check(confirm.performAction(AccessibilityNodeInfo.ACTION_CLICK))
+            if (android.os.Build.VERSION.SDK_INT >= 30) {
+                check(input.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.id)) { "Save IME Done was unavailable" }
+            } else check(confirm.performAction(AccessibilityNodeInfo.ACTION_CLICK))
             runOnMainSync { screen.recreate() }
             val rotated = checkNotNull(rotation.waitForActivityWithTimeout(10_000)) { "Activity did not recreate" }
             removeMonitor(rotation)
@@ -179,10 +190,13 @@ class RecordingSmoke : Instrumentation() {
             activate(targetContext.getString(R.string.action_mode_menu_edit), menu = true)
             await("UI rename dialog") { findEditable(uiAutomation.rootInActiveWindow) != null }
             val renamedName = "$uiName-renamed"
-            check(checkNotNull(findEditable(uiAutomation.rootInActiveWindow)).performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
+            val renameInput = checkNotNull(findEditable(uiAutomation.rootInActiveWindow))
+            check(renameInput.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
                 putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, renamedName)
             }))
-            activate(targetContext.getString(R.string.rename_dialog_save))
+            if (android.os.Build.VERSION.SDK_INT >= 30) {
+                check(renameInput.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.id)) { "Rename IME Done was unavailable" }
+            } else activate(targetContext.getString(R.string.rename_dialog_save))
             await("UI rename") { store.list().any { it.uri == uiSaved.uri && it.name.startsWith(renamedName) } }
             activate(renamedName, longClick = true)
             awaitSelection()
@@ -239,7 +253,7 @@ class RecordingSmoke : Instrumentation() {
                 check(result.playable && result.durationMillis == 1_000L)
                 check(recovered.file.length() == 96_044L)
             } finally { recovered.file.delete() }
-            output.putString("stream", "PASS: four codecs, pause/resume, transactional save, collisions, rename/delete, WAV recovery, original UI rotation/playback/seek/rename/delete, background save/start/cancel and byte limit\n")
+            output.putString("stream", "PASS: measured-level curve, pause freeze and silence settling, four codecs, pause/resume, transactional save, collisions, rename/delete, WAV recovery, original UI rotation/playback/seek/rename/delete, invalid name preserves draft/dialog, save/rename IME Done, background save/start/cancel and byte limit\n")
             resultCode = Activity.RESULT_OK
         } catch (failure: Throwable) {
             output.putString("stream", "FAIL: ${failure.stackTraceToString()}\n")
@@ -253,6 +267,46 @@ class RecordingSmoke : Instrumentation() {
             }
         }
         finish(resultCode, output)
+    }
+
+    /** 受控峰值验证可见反馈与状态切换，不依赖模拟器麦克风输入。 */
+    private fun verifyWaveform(activity: Activity) {
+        val root = activity.findViewById<ViewGroup>(android.R.id.content)
+        lateinit var wave: SoundRecorder.Waveform
+        runOnMainSync {
+            wave = SoundRecorder.Waveform(activity, null)
+            root.addView(wave, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                (160 * activity.resources.displayMetrics.density).toInt()))
+        }
+        waitForIdleSync()
+        fun sample(peak: Int, state: RecordingState) = runOnMainSync { wave.update(peak, state) }
+        fun picture(): IntArray {
+            lateinit var pixels: IntArray
+            runOnMainSync {
+                // 只比较曲线，排除电平文字，防止文字变化掩盖绘制回归。
+                val height = wave.height - (40 * activity.resources.displayMetrics.density).toInt()
+                val bitmap = android.graphics.Bitmap.createBitmap(wave.width, height, android.graphics.Bitmap.Config.ARGB_8888)
+                wave.draw(android.graphics.Canvas(bitmap))
+                pixels = IntArray(wave.width * height)
+                bitmap.getPixels(pixels, 0, wave.width, 0, 0, wave.width, height)
+                bitmap.recycle()
+            }
+            return pixels
+        }
+        try {
+            sample(0, RecordingState.RECORDING)
+            val quiet = picture()
+            repeat(8) { sample(1000, RecordingState.RECORDING); SystemClock.sleep(100) }
+            check(!quiet.contentEquals(picture())) { "Measured peak did not change curve" }
+            sample(0, RecordingState.PAUSED)
+            val paused = picture()
+            SystemClock.sleep(350)
+            check(paused.contentEquals(picture())) { "Paused waveform kept animating" }
+            sample(0, RecordingState.RECORDING)
+            // 系统关闭动画时平滑随服务快照更新，因此两种设置都持续采样。
+            repeat(20) { sample(0, RecordingState.RECORDING); SystemClock.sleep(100) }
+            check(quiet.contentEquals(picture())) { "Silence did not settle to the baseline" }
+        } finally { runOnMainSync { root.removeView(wave) } }
     }
     private fun snapshot(service: SoundRecorderService): RecordingSnapshot {
         var result = RecordingSnapshot()

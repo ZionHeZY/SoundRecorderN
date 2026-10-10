@@ -17,6 +17,7 @@
     <string name="ui_selected">已选择 %1$d 项</string>
     <string name="ui_play">播放 / 暂停</string>
     <string name="ui_level">麦克风音量</string>
+    <string name="ui_level_near_full_scale">接近满幅，请稍远离麦克风</string>
     <string name="ui_seek">播放位置</string>
     <string name="ui_idle">准备录音</string>
     <string name="ui_working">正在保存…</string>

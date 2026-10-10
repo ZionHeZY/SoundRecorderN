@@ -2,7 +2,7 @@ VoiceLine waveform rendering
 Copyright 2016 carlos
 Source: https://github.com/ws123/VoiceLine
 
-Modified for SoundRecorderN: Kotlin/Canvas implementation, cached trigonometric geometry, reused paths, and visible-recording-only redraw. This notice applies to the derived waveform renderer, not a new license for the entire repository.
+Modified for SoundRecorderN: Kotlin/Canvas implementation restoring the original tapered trigonometric curves, inter-layer phase offsets and amplitude weights. The original 20 layers are sampled into 12 reusable paths with 128 precomputed points; measured microphone peaks control height through dBFS mapping and time-based smoothing. Visible recording-only animation, pause/stop freezing, silence settling and reduced-motion support replace the original redraw loop. This notice preserves the original visual provenance; it does not relicense the entire repository.
 
 Apache License
                            Version 2.0, January 2004

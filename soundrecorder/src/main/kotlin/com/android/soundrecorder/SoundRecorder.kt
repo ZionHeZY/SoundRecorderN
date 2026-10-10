@@ -1,6 +1,7 @@
 package com.android.soundrecorder
 
 import android.Manifest
+import android.animation.ValueAnimator
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.*
@@ -12,6 +13,8 @@ import android.net.Uri
 import android.os.*
 import android.provider.MediaStore
 import android.util.AttributeSet
+import android.text.TextPaint
+import android.text.TextUtils
 import android.view.*
 import android.widget.*
 import androidx.core.view.ViewCompat
@@ -22,8 +25,10 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.Executors
 import kotlin.math.cos
+import kotlin.math.exp
 import kotlin.math.log10
 import kotlin.math.pow
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /** 沿用旧版 XML、主题、图标和双页面交互；录音及保存归服务所有。 */
@@ -106,7 +111,7 @@ class SoundRecorder : Activity() {
         stop = findViewById(R.id.stopButton)
         library = findViewById(R.id.listButton)
         waveform = findViewById(R.id.voicLine)
-        waveform.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        waveform.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
         record.setOnClickListener { onRecord() }
         stop.setOnClickListener { service?.stop() }
         stop.contentDescription = getString(R.string.ui_stop)
@@ -222,7 +227,7 @@ class SoundRecorder : Activity() {
         }
         val seconds = snapshot.durationMillis / 1000
         if (seconds != lastSecond) { lastSecond = seconds; timer.text = elapsed(snapshot.durationMillis) }
-        waveform.update(snapshot.amplitude, state == RecordingState.RECORDING)
+        waveform.update(snapshot.amplitude, state)
         if (visible && state == RecordingState.READY && snapshot.draft?.file?.name != promptedDraft && !busy) saveDraft()
     }
 
@@ -244,7 +249,7 @@ class SoundRecorder : Activity() {
     private fun chooseFormat() {
         val choices = listOf(RecordingFormat.AMR, RecordingFormat.THREE_GPP, RecordingFormat.AAC, RecordingFormat.WAV)
         val labels = intArrayOf(R.string.format_setting_amr_item, R.string.format_setting_3gpp_item, R.string.format_setting_aac_item, R.string.format_setting_wav_item)
-        AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Light_Dialog_Alert).setTitle(R.string.format_setting)
+        AlertDialog.Builder(this, R.style.RecorderDialog).setTitle(R.string.format_setting)
             .setSingleChoiceItems(labels.map(::getString).toTypedArray(), choices.indexOf(format)) { dialog, index ->
                 format = choices[index]
                 getSharedPreferences("recorder_settings", MODE_PRIVATE).edit().putString("format", format.name).apply()
@@ -252,7 +257,7 @@ class SoundRecorder : Activity() {
             }.show()
     }
     private fun chooseStorage() {
-        AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Light_Dialog_Alert).setTitle(R.string.storage_setting)
+        AlertDialog.Builder(this, R.style.RecorderDialog).setTitle(R.string.storage_setting)
             .setSingleChoiceItems(arrayOf(getString(R.string.storage_setting_local_item), getString(R.string.storage_setting_sdcard_item)), if (store.treeUri == null) 0 else 1) { dialog, index ->
                 dialog.dismiss()
                 if (index == 0) changeStorage(null)
@@ -290,11 +295,12 @@ class SoundRecorder : Activity() {
         if (busy || snapshot.state != RecordingState.READY || saveDialog != null) return
         if (!matchesMime(draft.format.mimeType)) { showError(getString(R.string.error_app_unsupported)); return }
         promptedDraft = draft.file.name
-        val content = layoutInflater.inflate(R.layout.rename_dialog, null)
+        val builder = AlertDialog.Builder(this)
+        val content = LayoutInflater.from(builder.context).inflate(R.layout.rename_dialog, null)
         val input = content.findViewById<EditText>(R.id.rename_edit_text)
         input.setText(getString(R.string.def_save_name_prefix) + " " + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.ROOT).format(Date()))
         input.selectAll()
-        val dialog = AlertDialog.Builder(this).setTitle(R.string.save_dialog_title).setView(content)
+        val dialog = builder.setTitle(R.string.save_dialog_title).setView(content)
             .setNegativeButton(R.string.discard) { _, _ -> if (service?.snapshot()?.draft == draft) service?.discard() }
             .setPositiveButton(R.string.rename_dialog_save, null).create()
         dialog.setCanceledOnTouchOutside(false)
@@ -303,12 +309,18 @@ class SoundRecorder : Activity() {
         dialogDraft = draft.file.name
         dialog.setOnDismissListener { if (saveDialog === dialog) { saveDialog = null; dialogDraft = null } }
         dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getColor(R.color.negative_button_color))
             input.requestFocusFromTouch()
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val positive = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            positive.setOnClickListener {
                 val name = input.text.toString().trim()
-                if (name.isBlank() || name == "." || name == ".." || name.any { it == '/' || it == '\\' || it.isISOControl() } || name.toByteArray().size > 180) {
-                    input.error = getString(R.string.rename_dialog_info_null)
+                val validation = when {
+                    name.isBlank() || name == "." || name == ".." || name.any { it == '/' || it == '\\' || it.isISOControl() } -> R.string.rename_dialog_info_null
+                    name.toByteArray(Charsets.UTF_8).size > 180 -> R.string.rename_dialog_info_length_limit
+                    else -> null
+                }
+                if (validation != null) {
+                    input.error = getString(validation)
+                    input.requestFocus()
                 } else {
                     val owner = service
                     if (owner?.snapshot()?.draft == draft && owner.snapshot().state == RecordingState.READY) {
@@ -317,6 +329,12 @@ class SoundRecorder : Activity() {
                         render(owner.snapshot())
                     }
                 }
+            }
+            input.setOnEditorActionListener { _, action, _ ->
+                if (action == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
+                    positive.performClick()
+                    true
+                } else false
             }
         }
         dialog.show()
@@ -372,55 +390,226 @@ class SoundRecorder : Activity() {
     }
 
     /**
-     * 原版红色叠层声纹；固定 Path 和三角函数表，无逐帧对象分配。
-     * 波形几何改写自 ws123/VoiceLine，Copyright 2016 carlos，Apache-2.0。
-     * 修改：Kotlin、预计算几何、Path 复用及仅可见录音时刷新。
-     * 完整许可和来源见 assets/licenses/VoiceLine.txt。
+     * 红色叠层曲线恢复 ws123/VoiceLine 的三角函数几何，Copyright 2016 carlos，Apache-2.0。
+     * 来源：https://github.com/ws123/VoiceLine；完整许可见 assets/licenses/VoiceLine.txt。
+     * 保留 4x(1-x) 收束、1.22^layer 相位偏移和 (2*layer-15)/20 振幅权重。
+     * 修改：原 20 层均匀采样为 12 层、128 点预计算，固定横向周期、复用 Path；
+     * 实测峰值按 −60..0 dBFS 控制高度，时间平滑、状态冻结、减弱动态及可访问音量说明。
+     * 曲线是音量反馈，不是原始 PCM、声压或声纹；静音录音为平线，待机参考曲线不超过 3dp。
      */
     class Waveform(context: Context, attrs: AttributeSet?) : View(context, attrs) {
-        private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xffff4444.toInt(); strokeWidth = 2f; style = Paint.Style.STROKE }
-        private val paths = Array(20) { Path() }
-        private var sine = emptyArray<FloatArray>()
-        private var cosine = emptyArray<FloatArray>()
-        private var envelope = FloatArray(0)
+        private val density = resources.displayMetrics.density
+        private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+            color = 0xffe53935.toInt()
+        }
+        private val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xff333333.toInt()
+            textSize = android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP, 14f, resources.displayMetrics)
+            textAlign = Paint.Align.CENTER
+        }
+        private val paths = Array(12) { Path() }
+        private val sampleX = FloatArray(128)
+        private val sampleSin = Array(12) { FloatArray(128) }
+        private val sampleCos = Array(12) { FloatArray(128) }
+        private var initialized = false
+        private var framePosted = false
+        private var state = RecordingState.IDLE
+        private var latestDb = -60f
+        private var targetLevel = 0f
+        private var displayLevel = 0f
+        private var hasSignal = false
         private var phase = 0.0
-        private var volume = 10f
-        private var active = false
-        fun update(amplitude: Int, recording: Boolean) {
-            val db = if (amplitude > 100) 20 * log10(amplitude / 100.0) else 0.0
-            val target = if (recording && db > 32) height * db.toFloat() / 400 else 10f
-            volume += (target - volume).coerceIn(-height / 30f, height / 30f)
-            if (recording) phase = (phase + 1.5) % (Math.PI * 2)
-            if (recording || active) invalidate()
-            active = recording
+        private var lastFrameAt = 0L
+        private var lastDescriptionAt = -1000L
+        private var caption = ""
+        private var visibleCaption = ""
+        private var chartCenter = 0f
+        private var chartRadius = 0f
+        private var captionBaseline = 0f
+        private val frame = Runnable {
+            framePosted = false
+            if (canDraw() && state == RecordingState.RECORDING && motionEnabled()) {
+                advanceLevel(SystemClock.uptimeMillis(), true)
+                invalidate()
+            }
+            syncAnimation()
         }
+
+        init {
+            // View's constructor can invoke visibility overrides before Kotlin fields exist.
+            initialized = true
+        }
+
+        fun update(amplitude: Int, state: RecordingState) {
+            val now = SystemClock.uptimeMillis()
+            val changed = this.state != state
+            this.state = state
+            if (changed) lastFrameAt = 0L
+            if (state == RecordingState.IDLE) {
+                latestDb = -60f
+                targetLevel = 0f
+                displayLevel = 0f
+                hasSignal = false
+                phase = 0.0
+            } else if (state == RecordingState.RECORDING) {
+                val peak = amplitude.coerceIn(0, 32767)
+                latestDb = if (peak == 0) -60f else
+                    (20.0 * log10(peak / 32767.0)).toFloat().coerceIn(-60f, 0f)
+                targetLevel = (latestDb + 60f) / 60f
+                if (targetLevel > 0f) hasSignal = true
+                if (canDraw()) advanceLevel(now, motionEnabled())
+            }
+            var redraw = changed || state == RecordingState.RECORDING
+            if (changed || caption.isEmpty() || state == RecordingState.RECORDING && now - lastDescriptionAt >= 1000L) {
+                val level = if (latestDb <= -60f) "≤ −60 dBFS" else
+                    String.format(Locale.getDefault(), "%d dBFS", latestDb.roundToInt())
+                val label = context.getString(R.string.ui_level)
+                val stateLabel = when (state) {
+                    RecordingState.IDLE -> context.getString(R.string.ui_idle)
+                    RecordingState.PAUSED -> context.getString(R.string.recording_paused)
+                    RecordingState.READY -> context.getString(R.string.recording_stopped)
+                    RecordingState.SAVING -> context.getString(R.string.ui_working)
+                    RecordingState.RECORDING -> ""
+                }
+                val warning = if (latestDb >= -1f && state != RecordingState.IDLE)
+                    context.getString(R.string.ui_level_near_full_scale) else ""
+                val description = "$label · $level" +
+                    (if (stateLabel.isEmpty()) "" else " · $stateLabel") +
+                    (if (warning.isEmpty()) "" else " · $warning")
+                if (contentDescription != description) contentDescription = description
+                val newCaption = when {
+                    state == RecordingState.IDLE -> label
+                    !hasSignal && (state == RecordingState.READY || state == RecordingState.SAVING) -> stateLabel
+                    warning.isNotEmpty() -> "$warning · $level"
+                    else -> "$label · $level"
+                }
+                if (caption != newCaption) {
+                    caption = newCaption
+                    fitCaption()
+                    redraw = true
+                }
+                lastDescriptionAt = now
+            }
+            syncAnimation()
+            if (redraw && canDraw()) invalidate()
+        }
+
+        private fun canDraw(): Boolean = isAttachedToWindow && isShown && windowVisibility == VISIBLE
+
+        private fun motionEnabled(): Boolean =
+            Build.VERSION.SDK_INT < 26 || ValueAnimator.areAnimatorsEnabled()
+
+        private fun advanceLevel(now: Long, movePhase: Boolean) {
+            val dt = if (lastFrameAt == 0L) 33L else (now - lastFrameAt).coerceIn(0L, 100L)
+            lastFrameAt = now
+            val timeConstant = if (targetLevel > displayLevel) 70.0 else 250.0
+            displayLevel += (targetLevel - displayLevel) * (1.0 - exp(-dt / timeConstant)).toFloat()
+            if (targetLevel == 0f && displayLevel < 0.002f) displayLevel = 0f
+            if (movePhase && (targetLevel > 0f || displayLevel > 0f)) {
+                phase = (phase + dt * 0.0024) % (2.0 * Math.PI)
+            }
+        }
+
+        private fun stopFrames() {
+            removeCallbacks(frame)
+            framePosted = false
+            lastFrameAt = 0L
+        }
+
+        private fun syncAnimation() {
+            if (!canDraw() || state != RecordingState.RECORDING) {
+                stopFrames()
+            } else if (!motionEnabled()) {
+                // Reduced motion receives live height only through the service's 100ms snapshots.
+                if (framePosted) removeCallbacks(frame)
+                framePosted = false
+            } else if (targetLevel > 0f || displayLevel > 0f) {
+                if (!framePosted) {
+                    framePosted = postDelayed(frame, 33L)
+                }
+            } else {
+                stopFrames()
+            }
+        }
+
+        override fun onAttachedToWindow() {
+            super.onAttachedToWindow()
+            if (initialized) syncAnimation()
+        }
+
+        override fun onDetachedFromWindow() {
+            if (initialized) stopFrames()
+            super.onDetachedFromWindow()
+        }
+
+        override fun onVisibilityChanged(changedView: View, visibility: Int) {
+            super.onVisibilityChanged(changedView, visibility)
+            if (initialized) syncAnimation()
+        }
+
+        override fun onWindowVisibilityChanged(visibility: Int) {
+            super.onWindowVisibilityChanged(visibility)
+            if (initialized) syncAnimation()
+        }
+
+        private fun fitCaption() {
+            visibleCaption = TextUtils.ellipsize(caption, textPaint,
+                (width - 4f * density).coerceAtLeast(0f), TextUtils.TruncateAt.END).toString()
+        }
+
         override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-            val count = (w + 1) / 2
-            envelope = FloatArray(count) { val x = (w - 1 - it * 2).toFloat() / w; 4 * x * (1 - x) }
-            sine = Array(20) { n -> FloatArray(count) { i -> sin((w - 1 - i * 2 - 1.22.pow(n + 1)) * Math.PI / 180).toFloat() } }
-            cosine = Array(20) { n -> FloatArray(count) { i -> cos((w - 1 - i * 2 - 1.22.pow(n + 1)) * Math.PI / 180).toFloat() } }
+            super.onSizeChanged(w, h, oldw, oldh)
+            if (!initialized) return
+            val metrics = textPaint.fontMetrics
+            captionBaseline = h - 2f * density - metrics.descent
+            val chartBottom = (captionBaseline + metrics.ascent - 8f * density).coerceAtLeast(0f)
+            chartCenter = chartBottom / 2f
+            chartRadius = (chartCenter - 3f * density).coerceAtLeast(0f)
+            val span = (w - 4f * density).coerceAtLeast(0f)
+            for (layer in paths.indices) {
+                val originalLayer = (layer * 19f / (paths.size - 1)).roundToInt()
+                val offset = 1.22.pow(originalLayer)
+                val weight = (2f * originalLayer - 15f) / 20f / 1.15f
+                for (sample in sampleX.indices) {
+                    val x = sample.toFloat() / sampleX.lastIndex
+                    sampleX[sample] = 2f * density + x * span
+                    val angle = x * 2.25 * 2.0 * Math.PI + offset
+                    val taper = 4f * x * (1f - x) * weight
+                    sampleSin[layer][sample] = sin(angle).toFloat() * taper
+                    sampleCos[layer][sample] = cos(angle).toFloat() * taper
+                }
+            }
+            fitCaption()
         }
+
         override fun onDraw(canvas: Canvas) {
             super.onDraw(canvas)
-            val center = height / 2f
-            paint.alpha = 255
-            paint.strokeWidth = resources.displayMetrics.density
-            canvas.drawLine(0f, center, width.toFloat(), center, paint)
-            paint.strokeWidth = 2f
-            val sinPhase = sin(phase).toFloat()
-            val cosPhase = cos(phase).toFloat()
-            for (n in paths.indices) {
-                val path = paths[n]
-                path.rewind()
-                path.moveTo(width.toFloat(), center)
-                val scale = (2 * (n + 1) - 15) / 20f * volume
-                for (i in envelope.indices) {
-                    val y = center + scale * envelope[i] * (sine[n][i] * cosPhase - cosine[n][i] * sinPhase)
-                    path.lineTo((width - 1 - i * 2).toFloat(), y)
+            val amplitude = if (state == RecordingState.IDLE) minOf(3f * density, chartRadius) else displayLevel * chartRadius
+            val phaseSin = sin(phase).toFloat()
+            val phaseCos = cos(phase).toFloat()
+            paint.color = if (latestDb >= -1f && state != RecordingState.IDLE) 0xffb3262e.toInt() else 0xffe53935.toInt()
+            if (amplitude == 0f) {
+                paint.alpha = 100
+                paint.strokeWidth = density
+                canvas.drawLine(2f * density, chartCenter, width - 2f * density, chartCenter, paint)
+            } else {
+                for (layer in paths.indices) {
+                    val path = paths[layer]
+                    path.rewind()
+                    for (sample in sampleX.indices) {
+                        val y = chartCenter + amplitude *
+                            (sampleSin[layer][sample] * phaseCos + sampleCos[layer][sample] * phaseSin)
+                        if (sample == 0) path.moveTo(sampleX[sample], y) else path.lineTo(sampleX[sample], y)
+                    }
+                    paint.alpha = if (layer == paths.lastIndex) 230 else 32 + layer * 7
+                    paint.strokeWidth = if (layer == paths.lastIndex) 1.7f * density else density
+                    canvas.drawPath(path, paint)
                 }
-                paint.alpha = if (n == 19) 255 else n * 130 / 20
-                if (paint.alpha > 0) canvas.drawPath(path, paint)
             }
+            canvas.drawText(visibleCaption, width / 2f, captionBaseline, textPaint)
         }
     }
 }

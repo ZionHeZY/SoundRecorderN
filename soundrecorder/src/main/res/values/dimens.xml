@@ -30,7 +30,6 @@
 
 <resources>
     <dimen name="action_bar_title_font_size">20sp</dimen>
-    <dimen name="timer_view_layout_size">360dp</dimen>
     <dimen name="media_panel_height">120dp</dimen>
     <dimen name="media_panel_margin_bottom">58dp</dimen>
     <dimen name="media_button_size">72dp</dimen>
@@ -39,9 +38,8 @@
     <dimen name="media_record_button_elevation">6dp</dimen>
 
     <dimen name="timer_text_size">48dip</dimen>
-    <dimen name="timer_text_margin_top">137dp</dimen>
-    <dimen name="timer_text_margin_bottom">24dp</dimen>
-    <dimen name="timer_layout_margin_top">31dp</dimen>
+    <dimen name="recording_waveform_height">160dp</dimen>
+    <dimen name="recording_content_padding">16dp</dimen>
     <!-- minus status bar height (24dp) in landscape. -->
     <dimen name="vumeter_layout_margin_minus">11dp</dimen>
     <dimen name="vumeter_layout_margin">35dp</dimen>

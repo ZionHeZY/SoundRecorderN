@@ -29,6 +29,7 @@
 -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mediaButtonPanel"
     style="@style/MediaPanelStyle">
 
     <ImageButton

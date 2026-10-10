@@ -45,10 +45,11 @@
         <item name="android:layoutDirection">rtl</item>
     </style>
     <style name="TimerViewLayout">
-        <item name="android:layout_width">@dimen/timer_view_layout_size</item>
-        <item name="android:layout_height">@dimen/timer_view_layout_size</item>
-        <item name="android:layout_centerHorizontal">true</item>
-        <item name="android:layout_marginTop">@dimen/timer_layout_margin_top</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_alignParentTop">true</item>
+        <item name="android:layout_above">@id/mediaButtonPanel</item>
+        <item name="android:layout_margin">24dp</item>
     </style>
     <style name="VUMeterLayoutStyle">
         <item name="android:layout_width">match_parent</item>
