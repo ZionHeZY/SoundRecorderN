@@ -41,6 +41,4 @@ jobs:
             adb shell pm grant com.android.soundrecorder android.permission.RECORD_AUDIO
             if [ ${{ matrix.api }} -ge 33 ]; then adb shell pm grant com.android.soundrecorder android.permission.POST_NOTIFICATIONS; fi
             if [ ${{ matrix.api }} -le 28 ]; then adb shell pm grant com.android.soundrecorder android.permission.WRITE_EXTERNAL_STORAGE; fi
-            result="$(adb shell am instrument -w com.android.soundrecorder.test/com.android.soundrecorder.RecordingSmoke)"
-            printf '%s\n' "$result"
-            echo "$result" | grep -q '^PASS:'
+            result="$(adb shell am instrument -w com.android.soundrecorder.test/com.android.soundrecorder.RecordingSmoke)"; printf '%s\n' "$result"; echo "$result" | grep -q '^PASS:'
