@@ -345,13 +345,12 @@ class RecordingStore(context: Context) {
 
     private fun canReadAudio(): Boolean {
         val permission = if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_AUDIO else Manifest.permission.READ_EXTERNAL_STORAGE
-        return context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED ||
-            (Build.VERSION.SDK_INT < 29 && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
+        return context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun requireLegacyWrite() {
-        if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            throw SecurityException("保存或修改录音需要存储写入权限")
+        if (!canReadAudio() || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            throw SecurityException("保存或修改录音需要存储读写权限")
         }
         if (Environment.getExternalStorageState() != Environment.MEDIA_MOUNTED) throw IOException("外部存储不可写")
     }

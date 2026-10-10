@@ -113,7 +113,7 @@ class RecordingSmoke : Instrumentation() {
             // 走实际按钮、命名对话框和保存回调，捕获服务测试无法发现的界面回归。
             val screen = checkNotNull(activity)
             await("Previous dialogs closed") { findEditable(uiAutomation.rootInActiveWindow) == null }
-            check(invokeMenuActionSync(screen, R.id.menu_item_filetype, 0)) { "Format menu did not open" }
+            await("Enabled format menu") { invokeMenuActionSync(screen, R.id.menu_item_filetype, 0) }
             activate(targetContext.getString(R.string.format_setting_wav_item))
             clickScreen(screen, R.string.ui_record)
             await("UI recording") { snapshot(recorder).durationMillis >= 3_000 }
@@ -175,7 +175,8 @@ class RecordingSmoke : Instrumentation() {
             await("Accessible playback seek") { progress() > 1_500 }
             // 操作原版长按工具栏，验证界面而非只调用文件存储 API。
             activate(uiName, longClick = true)
-            activate(targetContext.getString(R.string.action_mode_menu_edit))
+            awaitSelection()
+            activate(targetContext.getString(R.string.action_mode_menu_edit), menu = true)
             await("UI rename dialog") { findEditable(uiAutomation.rootInActiveWindow) != null }
             val renamedName = "$uiName-renamed"
             check(checkNotNull(findEditable(uiAutomation.rootInActiveWindow)).performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
@@ -184,7 +185,8 @@ class RecordingSmoke : Instrumentation() {
             activate(targetContext.getString(R.string.rename_dialog_save))
             await("UI rename") { store.list().any { it.uri == uiSaved.uri && it.name.startsWith(renamedName) } }
             activate(renamedName, longClick = true)
-            activate(targetContext.getString(R.string.action_mode_menu_delete))
+            awaitSelection()
+            activate(targetContext.getString(R.string.action_mode_menu_delete), menu = true)
             activate(targetContext.getString(R.string.delete_dialog_confirm))
             await("UI deletion") { store.list().none { it.uri == uiSaved.uri } }
             created.removeAll { it.uri == uiSaved.uri }
@@ -260,9 +262,15 @@ class RecordingSmoke : Instrumentation() {
     private fun await(label: String, predicate: () -> Boolean) {
         val until = SystemClock.elapsedRealtime() + 10_000
         while (!predicate()) {
-            check(SystemClock.elapsedRealtime() < until) { "Timeout: $label" }
+            check(SystemClock.elapsedRealtime() < until) { "Timeout: $label\n${describe(uiAutomation.rootInActiveWindow)}" }
             SystemClock.sleep(25)
         }
+    }
+
+    private fun describe(node: AccessibilityNodeInfo?): String {
+        if (node == null) return "<no active window>"
+        return "${node.className}: text=${node.text}, description=${node.contentDescription}, clickable=${node.isClickable}, longClickable=${node.isLongClickable}, visible=${node.isVisibleToUser}\n" +
+            (0 until node.childCount).joinToString("") { describe(node.getChild(it)) }
     }
 
     private fun clickScreen(activity: Activity, label: Int) {
@@ -274,6 +282,12 @@ class RecordingSmoke : Instrumentation() {
         }
     }
 
+    private fun awaitSelection() {
+        await("Contextual selection toolbar") {
+            uiAutomation.rootInActiveWindow?.findAccessibilityNodeInfosByText(targetContext.getString(R.string.action_mode_selected, 1))?.isNotEmpty() == true
+        }
+    }
+
     private fun findEditable(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
         if (node == null) return null
         if (node.className?.toString() == "android.widget.EditText") return node
@@ -281,9 +295,16 @@ class RecordingSmoke : Instrumentation() {
         return null
     }
 
-    private fun activate(label: String, longClick: Boolean = false) {
+    private fun activate(label: String, longClick: Boolean = false, menu: Boolean = false) {
         await("Accessible control: $label") {
-            uiAutomation.rootInActiveWindow?.findAccessibilityNodeInfosByText(label).orEmpty().any { match ->
+            val root = uiAutomation.rootInActiveWindow
+            val matches = root?.findAccessibilityNodeInfosByText(label).orEmpty().filter { it.isVisibleToUser }
+            if (menu && matches.isEmpty()) {
+                val overflowId = targetContext.resources.getIdentifier("action_menu_overflow_description", "string", "android")
+                if (overflowId != 0) root?.findAccessibilityNodeInfosByText(targetContext.getString(overflowId))
+                    ?.firstOrNull { it.isClickable && it.isVisibleToUser }?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            }
+            matches.any { match ->
                 var node: AccessibilityNodeInfo? = match
                 while (node != null && if (longClick) !node.isLongClickable else !node.isClickable) node = node.parent
                 node?.performAction(if (longClick) AccessibilityNodeInfo.ACTION_LONG_CLICK else AccessibilityNodeInfo.ACTION_CLICK) == true

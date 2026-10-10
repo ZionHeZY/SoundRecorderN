@@ -349,7 +349,8 @@ class FileListActivity : Activity() {
         if (code == WRITE && work.waiting == "permission") {
             work.waiting = null
             val operation = work.operation
-            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED && operation != null) mutate(operation)
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
+                checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED && operation != null) mutate(operation)
             else { work.operation = null; showError(SecurityException(getString(R.string.ui_permission))); updateSelection(); reload() }
         }
     }
@@ -388,9 +389,10 @@ class FileListActivity : Activity() {
         releasePlayer()
         work.operation = operation
         if (Build.VERSION.SDK_INT <= 28 && operation.remaining.any { it.uri.authority == MediaStore.AUTHORITY } &&
-            checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
+                checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)) {
             work.waiting = "permission"
-            requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), WRITE)
+            requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE), WRITE)
             updateSelection()
             return
         }

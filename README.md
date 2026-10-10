@@ -26,7 +26,7 @@
 ## 存储与旧版升级
 
 - Android 10+：新录音发布到共享媒体库 `Music/SoundRecorder/`，无需授予全部音频读取权限即可管理本应用的新录音。
-- Android 8–9：新录音写入 `/sdcard/SoundRecorder/`，需要存储写入权限。
+- Android 8–9：新录音写入 `/sdcard/SoundRecorder/`，需要存储读写权限；Android 8 起不再自动授予同组的其他权限，应用会显式申请两项。
 - 自选目录：使用系统 Storage Access Framework（文件夹访问授权），支持 SD 卡；授权失效或保存失败不会删除源草稿。
 - 在录音列表的菜单中点击 **显示已有录音** 并授权后，媒体库中的 `SoundRecorder`、`Recording`、`FMRecording`、`CallRecord` 目录录音会出现在列表中。文件留在原位置，不批量搬迁或删除。自选目录额外显示该目录的直接音频子文件。
 - 修改其他应用创建的媒体文件时，Android 10+ 可能要求系统确认。取消确认不会修改文件。
@@ -72,7 +72,9 @@ adb install -r soundrecorder/build/outputs/apk/androidTest/debug/soundrecorder-d
 adb shell pm grant com.android.soundrecorder android.permission.RECORD_AUDIO
 # Android 13+：
 adb shell pm grant com.android.soundrecorder android.permission.POST_NOTIFICATIONS
-# Android 8–9 另需：pm grant com.android.soundrecorder android.permission.WRITE_EXTERNAL_STORAGE
+# Android 8–9 另需：
+# adb shell pm grant com.android.soundrecorder android.permission.READ_EXTERNAL_STORAGE
+# adb shell pm grant com.android.soundrecorder android.permission.WRITE_EXTERNAL_STORAGE
 adb shell am instrument -w com.android.soundrecorder.test/com.android.soundrecorder.RecordingSmoke
 ```
 

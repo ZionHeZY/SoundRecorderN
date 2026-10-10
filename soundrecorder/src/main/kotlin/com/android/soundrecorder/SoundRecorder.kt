@@ -154,7 +154,10 @@ class SoundRecorder : Activity() {
         if (busy) return
         val needed = mutableListOf<String>()
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) needed += Manifest.permission.RECORD_AUDIO
-        if (Build.VERSION.SDK_INT <= 28 && store.treeUri == null && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) needed += Manifest.permission.WRITE_EXTERNAL_STORAGE
+        if (Build.VERSION.SDK_INT <= 28 && store.treeUri == null) {
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) needed += Manifest.permission.READ_EXTERNAL_STORAGE
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) needed += Manifest.permission.WRITE_EXTERNAL_STORAGE
+        }
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) needed += Manifest.permission.POST_NOTIFICATIONS
         if (needed.isNotEmpty()) requestPermissions(needed.toTypedArray(), 10) else beginCapture()
     }
@@ -168,7 +171,9 @@ class SoundRecorder : Activity() {
         super.onRequestPermissionsResult(code, permissions, results)
         if (code == 10) {
             if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED &&
-                (Build.VERSION.SDK_INT > 28 || store.treeUri != null || checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)) beginCapture()
+                (Build.VERSION.SDK_INT > 28 || store.treeUri != null ||
+                    checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
+                    checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)) beginCapture()
             else showError(getString(R.string.ui_permission))
         }
     }
