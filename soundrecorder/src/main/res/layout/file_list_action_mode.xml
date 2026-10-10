@@ -34,18 +34,6 @@
     android:layout_height="match_parent"
     android:orientation="horizontal">
 
-    <com.android.soundrecorder.actionmode.ButtonWithPopupMenu
-        android:id="@+id/selection_button"
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:divider="?android:attr/listDividerAlertDialog"
-        android:gravity="start|center_vertical"
-        android:singleLine="true"
-        android:textStyle="bold"
-        android:textAppearance="?android:attr/textAppearanceLargePopupMenu"
-        android:visibility="gone"
-        tools:text="1 selected" />
-
     <Spinner
         style="@style/ActionModeSpinner"
         android:id="@+id/selection_spinner"
