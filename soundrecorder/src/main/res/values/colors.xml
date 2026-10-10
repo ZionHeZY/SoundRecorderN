@@ -40,4 +40,11 @@
     <color name="vumeter_progress_color">#EF5350</color>
 
     <color name="negative_button_color">#DE000000</color>
+
+    <color name="dialog_surface">#FFFAFAFA</color>
+    <color name="dialog_text">#FF242424</color>
+    <color name="dialog_secondary_text">#FF616161</color>
+    <color name="dialog_accent">#FFB32624</color>
+    <color name="dialog_input_fill">#FFF1EEEE</color>
+    <color name="dialog_input_outline">#FF8A8080</color>
 </resources>

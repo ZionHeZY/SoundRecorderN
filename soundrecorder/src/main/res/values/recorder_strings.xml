@@ -17,6 +17,7 @@
     <string name="ui_selected">%1$d selected</string>
     <string name="ui_play">Play / pause</string>
     <string name="ui_level">Microphone level</string>
+    <string name="ui_level_near_full_scale">Near full scale</string>
     <string name="ui_seek">Playback position</string>
     <string name="ui_idle">Ready to record</string>
     <string name="ui_working">Saving…</string>

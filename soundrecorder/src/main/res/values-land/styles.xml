@@ -44,10 +44,15 @@
         <item name="android:orientation">vertical</item>
     </style>
     <style name="TimerViewLayout">
-        <item name="android:layout_width">@dimen/timer_view_layout_size</item>
-        <item name="android:layout_height">@dimen/timer_view_layout_size</item>
-        <item name="android:layout_centerVertical">true</item>
-        <item name="android:layout_marginLeft">@dimen/timer_layout_margin_top</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_alignParentTop">true</item>
+        <item name="android:layout_alignParentBottom">true</item>
+        <item name="android:layout_toStartOf">@id/mediaButtonPanel</item>
+        <item name="android:layout_marginStart">24dp</item>
+        <item name="android:layout_marginEnd">24dp</item>
+        <item name="android:layout_marginTop">8dp</item>
+        <item name="android:layout_marginBottom">8dp</item>
     </style>
     <style name="VUMeterLayoutStyle">
         <item name="android:layout_width">match_parent</item>
