@@ -44,22 +44,11 @@
                 android:layout_height="match_parent"
                 android:layout_centerInParent="true"/>-->
 
-        <com.carlos.voiceline.mylibrary.VoiceLineView
+        <view class="com.android.soundrecorder.SoundRecorder$Waveform"
             android:id="@+id/voicLine"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@android:color/white"
-            voiceView:maxVolume="200"
-            voiceView:middleLine="@android:color/holo_red_light"
-            voiceView:middleLineHeight="1dp"
-            voiceView:lineSpeed="100"
-            voiceView:fineness="two"
-            voiceView:rectSpace="0.5dp"
-            voiceView:rectWidth="2dp"
-            voiceView:rectInitHeight="5dp"
-            voiceView:sensibility="four"
-            voiceView:viewMode="line"
-            voiceView:voiceLine="@android:color/holo_red_light" />
+            android:background="@android:color/white" />
     </RelativeLayout>
 
     <TextView

@@ -31,10 +31,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <item
         android:id="@+id/menu_item_filetype"
         android:title="@string/format_setting"/>
-    <!--<item
-        android:id="@+id/menu_item_storage"
-        android:title="@string/storage_setting"/>-->
     <item
-        android:id="@+id/menu_item_keyboard"
-        android:title="@string/keyboard"/>
+        android:id="@+id/menu_item_storage"
+        android:title="@string/storage_setting"/>
 </menu>

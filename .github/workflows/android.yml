@@ -1,0 +1,46 @@
+name: Android
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [26, 35]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build and lint
+        run: ./gradlew :soundrecorder:assembleDebug :soundrecorder:assembleDebugAndroidTest :soundrecorder:assembleRelease :soundrecorder:lintDebug
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: |
+            adb install -r soundrecorder/build/outputs/apk/debug/soundrecorder-debug.apk
+            adb install -r soundrecorder/build/outputs/apk/androidTest/debug/soundrecorder-debug-androidTest.apk
+            adb shell pm grant com.android.soundrecorder android.permission.RECORD_AUDIO
+            if [ ${{ matrix.api }} -ge 33 ]; then adb shell pm grant com.android.soundrecorder android.permission.POST_NOTIFICATIONS; fi
+            if [ ${{ matrix.api }} -le 28 ]; then adb shell pm grant com.android.soundrecorder android.permission.WRITE_EXTERNAL_STORAGE; fi
+            result="$(adb shell am instrument -w com.android.soundrecorder.test/com.android.soundrecorder.RecordingSmoke)"
+            printf '%s\n' "$result"
+            echo "$result" | grep -q '^PASS:'

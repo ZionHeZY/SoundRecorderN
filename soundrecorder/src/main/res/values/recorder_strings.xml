@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_record">Record</string>
+    <string name="ui_stop">Stop</string>
+    <string name="ui_pause">Pause</string>
+    <string name="ui_resume">Resume</string>
+    <string name="ui_ready">Ready to save</string>
+    <string name="ui_library">Recordings</string>
+    <string name="ui_format">Format: %1$s</string>
+    <string name="ui_storage">Storage</string>
+    <string name="ui_phone">Phone storage</string>
+    <string name="ui_choose_folder">Choose folder / SD card</string>
+    <string name="ui_import">Show existing recordings</string>
+    <string name="ui_recover">Recover unsaved recording</string>
+    <string name="ui_permission">Microphone permission is required to record.</string>
+    <string name="ui_error">Operation failed: %1$s</string>
+    <string name="ui_selected">%1$d selected</string>
+    <string name="ui_play">Play / pause</string>
+    <string name="ui_level">Microphone level</string>
+    <string name="ui_seek">Playback position</string>
+    <string name="ui_idle">Ready to record</string>
+    <string name="ui_working">Saving…</string>
+    <string name="ui_name">Recording name</string>
+    <string name="ui_saved">Saved: %1$s</string>
+    <string name="ui_discard_confirm">Discard this unsaved recording?</string>
+    <string name="ui_empty">No recordings. Tap Record to start.</string>
+    <string name="ui_pick_existing">Return selected recording</string>
+    <string name="ui_notify_recording">Recording</string>
+    <string name="ui_notify_paused">Recording paused</string>
+    <string name="ui_notify_finishing">Finishing recording</string>
+    <string name="ui_notify_ready">Recording ready to save</string>
+</resources>

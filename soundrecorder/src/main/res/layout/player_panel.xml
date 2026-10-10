@@ -28,7 +28,7 @@
   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<com.android.soundrecorder.filelist.player.PlayerPanel
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/player_panel_layout"
@@ -40,11 +40,17 @@
     android:elevation="6dp"
     android:orientation="vertical">
 
-    <ProgressBar
+    <SeekBar
         android:id="@+id/player_progress"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
         android:layout_height="@dimen/player_panel_progress_bar_height"
+        android:minHeight="0dp"
+        android:maxHeight="@dimen/player_panel_progress_bar_height"
+        android:paddingStart="0dp"
+        android:paddingEnd="0dp"
+        android:thumb="@null"
+        android:contentDescription="@string/ui_seek"
         android:layout_marginBottom="@dimen/player_panel_progress_bar_margin_bottom"
         android:max="100"
         tools:progress="50" />
@@ -58,6 +64,7 @@
         <TextView
             android:id="@+id/player_progress_time"
             style="@android:style/TextAppearance.Small"
+            android:textColor="#FFFFFF"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="start|center_vertical"
@@ -66,6 +73,7 @@
         <TextView
             android:id="@+id/player_total_time"
             style="@android:style/TextAppearance.Small"
+            android:textColor="#FFFFFF"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end|center_vertical"
@@ -83,11 +91,13 @@
             style="@style/PlayerPanelMediaButton"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            android:src="@drawable/player_panel_play" />
+            android:src="@drawable/player_panel_play"
+            android:contentDescription="@string/ui_play" />
 
         <TextView
             android:id="@+id/player_title"
             style="@android:style/TextAppearance.Medium"
+            android:textColor="#FFFFFF"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
@@ -97,4 +107,4 @@
             tools:text="Title" />
     </RelativeLayout>
 
-</com.android.soundrecorder.filelist.player.PlayerPanel>
+</LinearLayout>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_record">录音</string>
+    <string name="ui_stop">停止</string>
+    <string name="ui_pause">暂停</string>
+    <string name="ui_resume">继续</string>
+    <string name="ui_ready">待保存</string>
+    <string name="ui_library">录音列表</string>
+    <string name="ui_format">格式：%1$s</string>
+    <string name="ui_storage">存储位置</string>
+    <string name="ui_phone">手机存储</string>
+    <string name="ui_choose_folder">选择文件夹 / SD 卡</string>
+    <string name="ui_import">显示已有录音</string>
+    <string name="ui_recover">恢复未保存录音</string>
+    <string name="ui_permission">录音需要麦克风权限。</string>
+    <string name="ui_error">操作失败：%1$s</string>
+    <string name="ui_selected">已选择 %1$d 项</string>
+    <string name="ui_play">播放 / 暂停</string>
+    <string name="ui_level">麦克风音量</string>
+    <string name="ui_seek">播放位置</string>
+    <string name="ui_idle">准备录音</string>
+    <string name="ui_working">正在保存…</string>
+    <string name="ui_name">录音名称</string>
+    <string name="ui_saved">已保存：%1$s</string>
+    <string name="ui_discard_confirm">丢弃这段未保存录音？</string>
+    <string name="ui_empty">暂无录音，点击「录音」开始。</string>
+    <string name="ui_pick_existing">返回选中的录音</string>
+    <string name="ui_notify_recording">正在录音</string>
+    <string name="ui_notify_paused">录音已暂停</string>
+    <string name="ui_notify_finishing">正在完成录音</string>
+    <string name="ui_notify_ready">录音待保存，点按打开</string>
+</resources>
